@@ -1,0 +1,120 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+}
+
+.speed-controls {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(2, 52px);
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #ffffff30;
+  border-radius: 16px;
+  background: #111827e8;
+  color: white;
+  font: 14px system-ui, sans-serif;
+  text-align: center;
+}
+
+.speed-controls span {
+  grid-column: 1 / -1;
+}
+
+.lane-controls {
+  right: auto;
+  left: max(20px, env(safe-area-inset-left));
+}
+
+.camera-controls {
+  top: max(20px, env(safe-area-inset-top));
+  left: max(20px, env(safe-area-inset-left));
+  right: auto;
+  bottom: auto;
+}
+
+.camera-controls button[aria-pressed='true'] {
+  background: #38bdf8;
+  box-shadow: inset 0 0 0 2px white;
+}
+
+@media (max-width: 380px) {
+  .camera-controls {
+    top: calc(max(20px, env(safe-area-inset-top)) + 64px);
+  }
+}
+
+.speed-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-controls button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #111827;
+  font-size: 28px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.speed-controls button:hover:not(:disabled) {
+  background: #bae6fd;
+}
+
+.speed-controls button:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 3px;
+}
+
+.speed-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.scene-status {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  color: white;
+  font: 16px sans-serif;
+}
+
+.day-night-toggle {
+  position: fixed;
+  top: max(20px, env(safe-area-inset-top));
+  right: max(20px, env(safe-area-inset-right));
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px solid #ffffff30;
+  border-radius: 14px;
+  background: #111827e8;
+  color: white;
+  font: 15px system-ui, sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.day-night-toggle:hover {
+  background: #26364d;
+}
+
+.day-night-toggle:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 3px;
+}
