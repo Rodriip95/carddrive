@@ -47,11 +47,6 @@ canvas {
   bottom: auto;
 }
 
-.camera-controls button[aria-pressed='true'] {
-  background: #38bdf8;
-  box-shadow: inset 0 0 0 2px white;
-}
-
 @media (max-width: 380px) {
   .camera-controls {
     top: calc(max(20px, env(safe-area-inset-top)) + 64px);
@@ -105,7 +100,7 @@ canvas {
   border-radius: 14px;
   background: #111827e8;
   color: white;
-  font: 15px system-ui, sans-serif;
+  font: 26px system-ui, sans-serif;
   cursor: pointer;
   touch-action: manipulation;
 }

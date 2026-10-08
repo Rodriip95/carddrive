@@ -5,8 +5,9 @@ export function createDayNightControls(container: HTMLElement, setNight: (night:
   button.className = 'day-night-toggle';
 
   function update() {
-    button.textContent = night ? '☀ Cambiar a día' : '☾ Cambiar a noche';
-    button.setAttribute('aria-label', button.textContent);
+    button.textContent = night ? '☀' : '☾';
+    button.title = night ? 'Cambiar a día' : 'Cambiar a noche';
+    button.setAttribute('aria-label', button.title);
     setNight(night);
   }
 

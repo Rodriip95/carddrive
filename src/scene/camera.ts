@@ -10,19 +10,20 @@ export function createCameraFollow(camera: PerspectiveCamera) {
   const { direction } = sceneConfig.camera;
   const x = Math.max(Math.abs(direction.x), 0.1);
   const z = Math.max(Math.abs(direction.z), 0.1);
-  const angles = [Math.atan2(x, z), Math.atan2(-x, z), Math.atan2(x, -z), Math.atan2(-x, -z)];
+  const baseAngle = Math.atan2(x, z);
+  const angles = [baseAngle, Math.PI - baseAngle, Math.PI + baseAngle, Math.PI * 2 - baseAngle];
   let angle = Math.atan2(direction.x, direction.z);
   let targetAngle = angle;
-  let selectedCorner = (direction.z < 0 ? 2 : 0) + (direction.x < 0 ? 1 : 0);
+  let selectedCorner = direction.x >= 0 ? (direction.z >= 0 ? 0 : 1) : (direction.z < 0 ? 2 : 3);
   let horizontalDistance = 0;
   let height = 0;
   return {
-    setCorner(index: number) {
-      if (!Number.isInteger(index) || index < 0 || index >= angles.length) return;
-      selectedCorner = index;
-      targetAngle = angles[index];
+    rotate(direction: -1 | 1) {
+      const nextCorner = (selectedCorner + direction + 4) % 4;
+      const turn = MathUtils.euclideanModulo(direction * (angles[nextCorner] - angles[selectedCorner]), Math.PI * 2);
+      targetAngle += direction * turn;
+      selectedCorner = nextCorner;
     },
-    getCorner: () => selectedCorner,
     getScreenRight: () => Math.cos(angle) < 0 ? -1 : 1,
     // Guardamos el encuadre cada vez que frameCamera lo recalcula.
     captureOffset() {
@@ -30,8 +31,8 @@ export function createCameraFollow(camera: PerspectiveCamera) {
       height = camera.position.y;
     },
     update(target: Vector3, delta = 0) {
-      // Interpolamos el ángulo por el arco más corto, conservando la distancia al auto.
-      const difference = Math.atan2(Math.sin(targetAngle - angle), Math.cos(targetAngle - angle));
+      // Acumulamos los giros para respetar el sentido incluso con varias pulsaciones.
+      const difference = targetAngle - angle;
       angle += difference * (1 - Math.exp(-4 * delta));
       offset.set(Math.sin(angle) * horizontalDistance, height, Math.cos(angle) * horizontalDistance);
       camera.position.copy(offset).add(target);

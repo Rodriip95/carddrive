@@ -1,6 +1,5 @@
 type CameraController = {
-  setCorner: (index: number) => void;
-  getCorner: () => number;
+  rotate: (direction: -1 | 1) => void;
 };
 
 export function createCameraControls(container: HTMLElement, camera: CameraController) {
@@ -11,27 +10,17 @@ export function createCameraControls(container: HTMLElement, camera: CameraContr
   label.textContent = 'Cámara';
   panel.appendChild(label);
 
-  const names = ['Delantera izquierda', 'Delantera derecha', 'Trasera izquierda', 'Trasera derecha'];
-  const symbols = ['↖', '↗', '↙', '↘'];
-  const buttons = names.map((name, index) => {
+  const directions = [-1, 1] as const;
+  directions.forEach((direction) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = symbols[index];
-    button.title = name;
-    button.setAttribute('aria-label', `Vista ${name.toLowerCase()}`);
+    button.textContent = direction === -1 ? '←' : '→';
+    button.title = direction === -1 ? 'Girar cámara hacia la izquierda' : 'Girar cámara hacia la derecha';
+    button.setAttribute('aria-label', button.title);
     button.addEventListener('click', () => {
-      camera.setCorner(index);
-      update();
+      camera.rotate(direction);
     });
     panel.appendChild(button);
-    return button;
   });
-
-  function update() {
-    buttons.forEach((button, index) => {
-      button.setAttribute('aria-pressed', String(camera.getCorner() === index));
-    });
-  }
-  update();
   container.appendChild(panel);
 }
