@@ -4,10 +4,12 @@ import { useState } from 'react';
 import type { CorrectOptionIndex, Question, QuestionAnswer } from '../domain/learning';
 import { summarizeAssessment } from '../domain/summarize-assessment';
 import { evaluateAnswer } from '../domain/evaluate-answer';
+import { useLearningProgress } from './ProgressProvider';
 
 type AssessmentPhase = 'exam' | 'results' | 'review' | 'review-complete';
 
 export function FinalAssessment({ questions }: { questions: Question[] }) {
+  const { ready, recordAnswer, recordAssessmentAttempt } = useLearningProgress();
   const [phase, setPhase] = useState<AssessmentPhase>('exam');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<CorrectOptionIndex | null>(null);
@@ -15,6 +17,7 @@ export function FinalAssessment({ questions }: { questions: Question[] }) {
   const [reviewQuestions, setReviewQuestions] = useState<Question[]>([]);
   const [reviewAnswers, setReviewAnswers] = useState<QuestionAnswer[]>([]);
   const [reviewAnswer, setReviewAnswer] = useState<QuestionAnswer | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
 
   const summary = summarizeAssessment(questions, answers);
   const currentQuestions = phase === 'review' ? reviewQuestions : questions;
@@ -29,6 +32,7 @@ export function FinalAssessment({ questions }: { questions: Question[] }) {
       const answer = evaluateAnswer(currentQuestion, selectedOptionIndex);
       setReviewAnswers((previous) => [...previous, answer]);
       setReviewAnswer(answer);
+      recordAnswer(currentQuestion.moduleId, answer);
       return;
     }
 
@@ -37,8 +41,17 @@ export function FinalAssessment({ questions }: { questions: Question[] }) {
     const nextAnswers = [...answers, answer];
     setAnswers(nextAnswers);
     setSelectedOptionIndex(null);
+    const currentAttemptId = attemptId ?? `evaluacion-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    if (!attemptId) setAttemptId(currentAttemptId);
 
     if (questionIndex + 1 === questions.length) {
+      recordAssessmentAttempt(currentQuestion.moduleId, {
+        id: currentAttemptId,
+        completedAt: new Date().toISOString(),
+        totalQuestions: questions.length,
+        correctAnswers: nextAnswers.filter((submittedAnswer) => submittedAnswer.isCorrect).length,
+        answers: nextAnswers,
+      });
       setPhase('results');
     } else {
       setQuestionIndex((previous) => previous + 1);
@@ -71,6 +84,7 @@ export function FinalAssessment({ questions }: { questions: Question[] }) {
     setReviewAnswer(null);
     setQuestionIndex(0);
     setSelectedOptionIndex(null);
+    setAttemptId(null);
     setPhase('exam');
   }
 
@@ -140,12 +154,12 @@ export function FinalAssessment({ questions }: { questions: Question[] }) {
           </div>
         </fieldset>
         {phase === 'exam' && (
-          <button className="answer-button" type="submit" disabled={selectedOptionIndex === null}>
+          <button className="answer-button" type="submit" disabled={selectedOptionIndex === null || !ready}>
             {questionIndex + 1 === questions.length ? 'Ver resultado' : 'Siguiente pregunta'}
           </button>
         )}
         {phase === 'review' && !reviewAnswer && (
-          <button className="answer-button" type="submit" disabled={selectedOptionIndex === null}>Confirmar respuesta</button>
+          <button className="answer-button" type="submit" disabled={selectedOptionIndex === null || !ready}>Confirmar respuesta</button>
         )}
       </form>
       {phase === 'review' && reviewAnswer && (

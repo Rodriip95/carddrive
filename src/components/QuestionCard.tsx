@@ -3,15 +3,19 @@
 import { useState } from 'react';
 import type { CorrectOptionIndex, Question, QuestionAnswer } from '../domain/learning';
 import { evaluateAnswer } from '../domain/evaluate-answer';
+import { useLearningProgress } from './ProgressProvider';
 
 export function QuestionCard({ question }: { question: Question }) {
+  const { ready, recordAnswer } = useLearningProgress();
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<CorrectOptionIndex | null>(null);
   const [answer, setAnswer] = useState<QuestionAnswer | null>(null);
 
   function submitAnswer(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (selectedOptionIndex === null || answer) return;
-    setAnswer(evaluateAnswer(question, selectedOptionIndex));
+    if (selectedOptionIndex === null || answer || !ready) return;
+    const nextAnswer = evaluateAnswer(question, selectedOptionIndex);
+    setAnswer(nextAnswer);
+    recordAnswer(question.moduleId, nextAnswer);
   }
 
   return (
@@ -37,7 +41,7 @@ export function QuestionCard({ question }: { question: Question }) {
           </div>
         </fieldset>
         {!answer && (
-          <button className="answer-button" type="submit" disabled={selectedOptionIndex === null}>
+          <button className="answer-button" type="submit" disabled={selectedOptionIndex === null || !ready}>
             Confirmar respuesta
           </button>
         )}

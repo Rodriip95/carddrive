@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLearningProgress } from './ProgressProvider';
 
 const checks = [
   {
@@ -60,17 +61,27 @@ const checks = [
 ];
 
 export function PreDriveChecklist() {
+  const { progress, ready, saveChecklistProgress } = useLearningProgress();
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const savedIds = progress.modules.find((module) => module.moduleId === 'vehiculo')?.completedChecklistItemIds;
   const pending = checks.length - checkedIds.length;
 
+  useEffect(() => {
+    if (ready) setCheckedIds(savedIds ?? []);
+  }, [ready, savedIds]);
+
   function toggleCheck(id: string) {
-    setCheckedIds((current) => current.includes(id)
-      ? current.filter((checkedId) => checkedId !== id)
-      : [...current, id]);
+    if (!ready) return;
+    const nextIds = checkedIds.includes(id)
+      ? checkedIds.filter((checkedId) => checkedId !== id)
+      : [...checkedIds, id];
+    setCheckedIds(nextIds);
+    saveChecklistProgress('vehiculo', nextIds);
   }
 
   function resetChecks() {
     setCheckedIds([]);
+    saveChecklistProgress('vehiculo', []);
   }
 
   return (
@@ -93,7 +104,7 @@ export function PreDriveChecklist() {
           return (
             <li className={`pre-drive-item${checked ? ' is-checked' : ''}`} key={check.id}>
               <label className="pre-drive-check">
-                <input type="checkbox" checked={checked} onChange={() => toggleCheck(check.id)} />
+                <input type="checkbox" checked={checked} disabled={!ready} onChange={() => toggleCheck(check.id)} />
                 <span className="pre-drive-number" aria-hidden="true">{index + 1}</span>
                 <span className="pre-drive-title">{check.title}</span>
               </label>
@@ -110,7 +121,7 @@ export function PreDriveChecklist() {
           : `Antes de iniciar, revisá los ${pending} ${pending === 1 ? 'punto pendiente' : 'puntos pendientes'} y resolvé cualquier falla que afecte la seguridad.`}
       </div>
 
-      <button className="secondary-button pre-drive-reset" type="button" onClick={resetChecks} disabled={checkedIds.length === 0}>
+      <button className="secondary-button pre-drive-reset" type="button" onClick={resetChecks} disabled={!ready || checkedIds.length === 0}>
         Reiniciar checklist
       </button>
 

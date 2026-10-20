@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { modules } from '../content/modules';
+import { ProgressControls } from '../components/ProgressControls';
 
 export default function HomePage() {
   return (
@@ -41,6 +42,8 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      <ProgressControls />
 
       <footer className="site-footer">Aprender con calma también es avanzar.</footer>
     </main>

@@ -78,12 +78,22 @@ export type QuestionAnswer = {
   answeredAt: string;
 };
 
+export interface AssessmentAttempt {
+  id: ContentId;
+  completedAt: string;
+  totalQuestions: number;
+  correctAnswers: number;
+  answers: QuestionAnswer[];
+}
+
 export interface ModuleProgress {
   moduleId: ContentId;
   completedQuestionIds: ContentId[];
   answers: QuestionAnswer[];
   completedScenarioIds: ContentId[];
   updatedAt: string;
+  completedChecklistItemIds?: ContentId[];
+  assessmentAttempts?: AssessmentAttempt[];
 }
 
 export interface LearningProgress {

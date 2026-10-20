@@ -7,6 +7,7 @@ import { QuestionCard } from '../../../components/QuestionCard';
 import { SignalCatalog } from '../../../components/SignalCatalog';
 import { trafficSignals } from '../../../content/signals';
 import { PreDriveChecklist } from '../../../components/PreDriveChecklist';
+import { LessonCompletion } from '../../../components/LessonCompletion';
 
 type LessonPageProps = { params: Promise<{ id: string }> };
 
@@ -43,6 +44,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
         {questions.length > 0 ? questions.map((question) => (
           <QuestionCard key={question.id} question={question} />
         )) : <p className="lesson-note">El contenido interactivo de esta lección estará disponible próximamente.</p>}
+        {questions.length > 0 && <LessonCompletion module={module} />}
       </article>
     </main>
   );

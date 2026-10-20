@@ -163,6 +163,29 @@ export function validateLearningProgress(value: unknown): ValidationResult<Learn
         errors.push(`La respuesta ${answerIndex + 1} del módulo ${module.moduleId} tiene campos inválidos.`);
       }
     });
+    if (module.completedChecklistItemIds !== undefined && !isStringArray(module.completedChecklistItemIds)) {
+      errors.push(`El checklist del módulo ${module.moduleId} tiene ids inválidos.`);
+    }
+    if (module.assessmentAttempts !== undefined && !Array.isArray(module.assessmentAttempts)) {
+      errors.push(`Los intentos de evaluación del módulo ${module.moduleId} deben ser una lista.`);
+    } else if (Array.isArray(module.assessmentAttempts)) {
+      module.assessmentAttempts.forEach((attempt, attemptIndex) => {
+        if (!isRecord(attempt) || !isNonEmptyString(attempt.id) || !isNonEmptyString(attempt.completedAt)
+          || typeof attempt.totalQuestions !== 'number' || !Number.isInteger(attempt.totalQuestions) || attempt.totalQuestions < 0
+          || typeof attempt.correctAnswers !== 'number' || !Number.isInteger(attempt.correctAnswers)
+          || attempt.correctAnswers < 0 || attempt.correctAnswers > attempt.totalQuestions || !Array.isArray(attempt.answers)) {
+          errors.push(`El intento ${attemptIndex + 1} del módulo ${module.moduleId} tiene campos inválidos.`);
+          return;
+        }
+        attempt.answers.forEach((answer, answerIndex) => {
+          if (!isRecord(answer) || !isNonEmptyString(answer.questionId)
+            || !isCorrectOptionIndex(answer.selectedOptionIndex) || typeof answer.isCorrect !== 'boolean'
+            || !isNonEmptyString(answer.answeredAt)) {
+            errors.push(`La respuesta ${answerIndex + 1} del intento ${attempt.id} tiene campos inválidos.`);
+          }
+        });
+      });
+    }
   });
 
   return result<LearningProgress>(value, errors);

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { ProgressProvider } from '../components/ProgressProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es-AR">
-      <body>{children}</body>
+      <body>
+        <ProgressProvider>{children}</ProgressProvider>
+      </body>
     </html>
   );
 }
