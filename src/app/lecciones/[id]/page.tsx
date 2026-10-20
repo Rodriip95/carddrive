@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation';
 import { getModule, modules } from '../../../content/modules';
 import { getQuestionsByModule } from '../../../content/questions';
 import { QuestionCard } from '../../../components/QuestionCard';
+import { SignalCatalog } from '../../../components/SignalCatalog';
+import { trafficSignals } from '../../../content/signals';
+import { PreDriveChecklist } from '../../../components/PreDriveChecklist';
 
 type LessonPageProps = { params: Promise<{ id: string }> };
 
@@ -35,6 +38,8 @@ export default async function LessonPage({ params }: LessonPageProps) {
         <ol className="lesson-list">
           {module.lesson.map((item) => <li key={item}>{item}</li>)}
         </ol>
+        {module.id === 'senales' && <SignalCatalog signals={trafficSignals} />}
+        {module.id === 'vehiculo' && <PreDriveChecklist />}
         {questions.length > 0 ? questions.map((question) => (
           <QuestionCard key={question.id} question={question} />
         )) : <p className="lesson-note">El contenido interactivo de esta lección estará disponible próximamente.</p>}

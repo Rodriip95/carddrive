@@ -6,7 +6,7 @@ import { createCollisions } from './collisions';
 import { sceneConfig } from './config';
 import { createWorld } from './world';
 import { createRoad } from './road';
-import { createSpeedBump } from './speed-bump';
+import { createScenarioObject } from './scenario-object';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ScenarioConfig } from '../domain/scenario';
 
@@ -26,7 +26,10 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       if (child instanceof Mesh) {
         child.geometry.dispose();
         const materials = Array.isArray(child.material) ? child.material : [child.material];
-        materials.forEach((material) => material.dispose());
+        materials.forEach((material) => {
+          if ('map' in material && material.map) material.map.dispose();
+          material.dispose();
+        });
       }
     });
     if (scene.background === world.scene.background) scene.background = new Color(sceneConfig.background);
@@ -39,8 +42,8 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
     objects.add(car.object);
     const road = createRoad(car.groundY);
     objects.add(road.object);
-    const speedBump = createSpeedBump(car.groundY, scenario);
-    objects.add(speedBump.object);
+    const scenarioObject = createScenarioObject(car.groundY, scenario);
+    objects.add(scenarioObject.object);
     let assetWarning: string | null = null;
     if (scenario.visual.asset) {
       try {
@@ -75,7 +78,7 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
         collisions.capturePrevious();
         road.update(step);
         car.update(step, road.getSpeed());
-        decisionReady = speedBump.update(step, road.getSpeed()) || decisionReady;
+        decisionReady = scenarioObject.update(step, road.getSpeed()) || decisionReady;
         traffic.update(step, road.getSpeed(), world.getNightAmount());
         collisions.resolve();
       }
@@ -85,11 +88,16 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       return decisionReady;
     }
 
-    function resolveBump(safeChoice: boolean) {
+    function resolveDecision(safeChoice: boolean) {
       if (safeChoice) {
-        road.changeSpeed(scenario.events.safe.targetSpeed - road.getTargetSpeed());
-        car.triggerBump(scenario.events.safe.bounce);
-        cameraFollow.shake(scenario.events.safe.shake);
+        const event = scenario.events.safe;
+        road.changeSpeed(event.targetSpeed - road.getTargetSpeed());
+        if (event.effect === 'stop') {
+          if (scenario.visual.kind === 'traffic-light') scenarioObject.waitForGreen();
+        } else {
+          car.triggerBump(event.bounce);
+          cameraFollow.shake(event.shake);
+        }
       } else {
         road.applyCollision();
         car.triggerBump(scenario.events.unsafe.bounce);
@@ -100,7 +108,7 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
 
     function reset() {
       road.reset();
-      speedBump.reset();
+      scenarioObject.reset();
       car.reset();
       traffic.reset();
       cameraFollow.reset();
@@ -116,7 +124,7 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       assetWarning,
       resize,
       reset,
-      resolveBump,
+      resolveDecision,
       dispose,
       setNight: world.setNight,
       setSpeed: (speed: number) => road.changeSpeed(speed - road.getTargetSpeed()),

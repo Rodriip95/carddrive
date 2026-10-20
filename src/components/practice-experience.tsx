@@ -21,6 +21,7 @@ export default function PracticeExperience() {
   const consequenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scenario = useSyncExternalStore(controller.subscribe, controller.getState, controller.getState);
   const selectedScenario = scenarios.find((item) => item.id === selectedScenarioId) ?? scenarios[0];
+  const speedLimit = selectedScenario.maxSpeed ?? 32;
 
   const handleReady = useCallback((nextExperience: DrivingExperienceApi | null) => {
     setExperience(nextExperience);
@@ -35,6 +36,10 @@ export default function PracticeExperience() {
   useEffect(() => () => {
     if (consequenceTimer.current) clearTimeout(consequenceTimer.current);
   }, []);
+
+  useEffect(() => {
+    setSpeed((current) => Math.min(current, speedLimit));
+  }, [speedLimit]);
 
   function moveLane(direction: -1 | 1) {
     if (!experience) return;
@@ -54,14 +59,16 @@ export default function PracticeExperience() {
   function chooseOption(optionId: string) {
     const result = controller.decide(optionId);
     if (result.status !== 'resultado') return;
-    const targetSpeed = experience?.resolveBump(result.correct);
+    const targetSpeed = experience?.resolveDecision(result.correct);
     if (targetSpeed !== undefined) setSpeed(targetSpeed);
     if (consequenceTimer.current) clearTimeout(consequenceTimer.current);
     setShowingConsequence(true);
     consequenceTimer.current = setTimeout(() => {
       consequenceTimer.current = null;
       setShowingConsequence(false);
-    }, 1500);
+    }, result.correct && selectedScenario.events.safe.effect === 'stop'
+      ? selectedScenario.events.safe.settleMs
+      : 1500);
   }
 
   const isDriving = scenario.status === 'conduciendo';
@@ -117,14 +124,22 @@ export default function PracticeExperience() {
             <p className="eyebrow">Resultado de la decisión</p>
             <h2 id="scenario-title">{scenario.correct ? 'Buena decisión' : 'Revisemos la situación'}</h2>
             <p>{scenario.decision.explanation}</p>
-            <button type="button" className="answer-button" onClick={() => controller.continueDriving()}>Continuar conduciendo</button>
+            {selectedScenario.source && <div className="answer-source">
+              <strong>Fuente: </strong>
+              <a href={selectedScenario.source.url} target="_blank" rel="noreferrer">{selectedScenario.source.title}</a>
+              <span>{selectedScenario.source.publisher} · {selectedScenario.source.jurisdiction}</span>
+              <span>{selectedScenario.source.reference}</span>
+            </div>}
+            {scenario.correct || selectedScenario.events.safe.effect !== 'stop'
+              ? <button type="button" className="answer-button" onClick={() => controller.continueDriving()}>Continuar conduciendo</button>
+              : <p>La práctica queda detenida. Reiniciá para intentarlo de nuevo con la conducta segura.</p>}
             <button type="button" className="secondary-button" onClick={restartScenario}>Reiniciar escenario</button>
           </section>}
         </div>}
       </div>
       <div className="practice-controls" aria-label="Controles de práctica">
         <p>Velocidad: {speed} km/h</p>
-        <button type="button" onClick={() => setSpeed((current) => Math.min(32, current + 4))} disabled={!isDriving || speed >= 32}>Acelerar</button>
+        <button type="button" onClick={() => setSpeed((current) => Math.min(speedLimit, current + 4))} disabled={!isDriving || speed >= speedLimit}>Acelerar</button>
         <button type="button" onClick={() => setSpeed((current) => Math.max(0, current - 4))} disabled={!isDriving || speed <= 0}>Frenar</button>
         <button type="button" onClick={() => moveLane(-1)} disabled={!isDriving || !experience || !experience.canChangeLane(-experience.getScreenRight())}>Moverse a la izquierda</button>
         <button type="button" onClick={() => moveLane(1)} disabled={!isDriving || !experience || !experience.canChangeLane(experience.getScreenRight())}>Moverse a la derecha</button>

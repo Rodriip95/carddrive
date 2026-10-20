@@ -40,7 +40,10 @@ export const modules: CatalogModule[] = [
     description: 'Familiarizate con los controles y las verificaciones básicas del auto.',
     icon: '▰', durationMinutes: 9, level: 'Inicial',
     lesson: ['Ubicá los controles principales y entendé para qué sirven.', 'Revisá luces, neumáticos y elementos antes de salir.', 'Adoptá una posición de manejo cómoda y con buena visibilidad.'],
-    questionIds: ['vehiculo-revision-previa'], scenarioIds: [],
+    questionIds: [
+      'vehiculo-revision-previa', 'vehiculo-neumaticos', 'vehiculo-luces', 'vehiculo-fluidos',
+      'vehiculo-testigos-advertencia', 'vehiculo-testigo-critico',
+    ], scenarioIds: [],
   },
 ];
 
