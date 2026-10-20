@@ -1,7 +1,6 @@
 'use client';
 
 import { useFrame, useThree } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PerspectiveCamera } from 'three';
 import { createDrivingExperience } from '../../scene/app';
@@ -9,12 +8,13 @@ import type { ScenarioConfig } from '../../domain/scenario';
 
 type DrivingExperienceApi = Awaited<ReturnType<typeof createDrivingExperience>>;
 
-export default function DrivingScene({ speed, night, running, scenario, onReady, onDecisionReady, onAssetWarning }: {
+export default function DrivingScene({ speed, night, running, scenario, onReady, onLoadStateChange, onDecisionReady, onAssetWarning }: {
   speed: number;
   night: boolean;
   running: boolean;
   scenario: ScenarioConfig;
   onReady: (experience: DrivingExperienceApi | null) => void;
+  onLoadStateChange: (state: 'loading' | 'ready' | 'error') => void;
   onDecisionReady: () => void;
   onAssetWarning: (warning: string | null) => void;
 }) {
@@ -25,20 +25,19 @@ export default function DrivingScene({ speed, night, running, scenario, onReady,
   speedRef.current = speed;
   nightRef.current = night;
   const [loadError, setLoadError] = useState(false);
-  const [loading, setLoading] = useState(true);
   const perspectiveCamera = camera as PerspectiveCamera;
 
   useEffect(() => {
     let cancelled = false;
     setLoadError(false);
-    setLoading(true);
+    onLoadStateChange('loading');
     void createDrivingExperience(scene, perspectiveCamera, scenario).then((created) => {
       if (cancelled) {
         created.dispose();
         return;
       }
       experience.current = created;
-      setLoading(false);
+      onLoadStateChange('ready');
       onAssetWarning(created.assetWarning);
       created.resize(size.width, size.height);
       created.setSpeed(speedRef.current);
@@ -48,6 +47,7 @@ export default function DrivingScene({ speed, night, running, scenario, onReady,
       if (!cancelled) {
         console.error('Error al cargar la escena de conducción:', error);
         setLoadError(true);
+        onLoadStateChange('error');
       }
     });
 
@@ -57,7 +57,7 @@ export default function DrivingScene({ speed, night, running, scenario, onReady,
       experience.current = null;
       onReady(null);
     };
-  }, [scene, perspectiveCamera, scenario, onReady, onAssetWarning]);
+  }, [scene, perspectiveCamera, scenario, onReady, onLoadStateChange, onAssetWarning]);
 
   useLayoutEffect(() => {
     experience.current?.resize(size.width, size.height);
@@ -76,7 +76,6 @@ export default function DrivingScene({ speed, night, running, scenario, onReady,
     if (experience.current.update(Math.min(delta, 0.1))) onDecisionReady();
   }, -1);
 
-  if (loading && !loadError) return <Html center><p className="canvas-loading" role="status">Cargando los vehículos…</p></Html>;
   return loadError ? <>
     <color attach="background" args={['#b9d9ed']} />
     <ambientLight intensity={1} />

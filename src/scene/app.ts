@@ -68,6 +68,8 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       frameCamera(camera, car.radius, viewportWidth / viewportHeight);
       cameraFollow.captureOffset();
       cameraFollow.update(car.object.position);
+      // Colocamos el sol y la luna después de encuadrar la cámara para que no aparezcan en el origen.
+      world.update(0, camera);
     }
 
     function update(delta: number) {

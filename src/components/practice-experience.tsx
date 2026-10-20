@@ -1,8 +1,7 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
-import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { createDrivingExperience } from '../scene/app';
 import { createScenarioController } from '../domain/scenario-controller';
 import { scenarios } from '../content/scenarios';
@@ -14,6 +13,7 @@ export default function PracticeExperience() {
   const [speed, setSpeed] = useState(8);
   const [night, setNight] = useState(false);
   const [experience, setExperience] = useState<DrivingExperienceApi | null>(null);
+  const [sceneLoadState, setSceneLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [selectedScenarioId, setSelectedScenarioId] = useState(scenarios[0].id);
   const [assetWarning, setAssetWarning] = useState<string | null>(null);
   const [controller] = useState(createScenarioController);
@@ -25,6 +25,10 @@ export default function PracticeExperience() {
 
   const handleReady = useCallback((nextExperience: DrivingExperienceApi | null) => {
     setExperience(nextExperience);
+  }, []);
+
+  const handleSceneLoadStateChange = useCallback((state: 'loading' | 'ready' | 'error') => {
+    setSceneLoadState(state);
   }, []);
 
   const presentScenarioDecision = useCallback(() => {
@@ -75,20 +79,21 @@ export default function PracticeExperience() {
 
   return (
     <section className="practice-shell" aria-label="Simulador 3D de conducción">
-      <div className="practice-canvas">
+      <div className={`practice-canvas${scenario.status === 'decision' ? ' scene-decision' : ''}`}>
         <Canvas shadows="basic" camera={{ position: [4, 3.5, 7], fov: 45 }}>
-          <Suspense fallback={<Html center><p className="canvas-loading" role="status">Cargando los vehículos…</p></Html>}>
-            <DrivingScene
-              speed={speed}
-              night={night}
-              running={isDriving || showingConsequence}
-              scenario={selectedScenario}
-              onReady={handleReady}
-              onDecisionReady={presentScenarioDecision}
-              onAssetWarning={handleAssetWarning}
-            />
-          </Suspense>
+          <DrivingScene
+            speed={speed}
+            night={night}
+            running={isDriving || showingConsequence}
+            scenario={selectedScenario}
+            onReady={handleReady}
+            onLoadStateChange={handleSceneLoadStateChange}
+            onDecisionReady={presentScenarioDecision}
+            onAssetWarning={handleAssetWarning}
+          />
         </Canvas>
+        {sceneLoadState === 'loading' && <p className="canvas-status" role="status">Cargando los vehículos…</p>}
+        {sceneLoadState === 'error' && <p className="canvas-status canvas-status-error" role="alert">No se pudo cargar la escena. Recargá la página para intentarlo de nuevo.</p>}
         {!isDriving && <div className="scenario-overlay">
           {assetWarning && <p className="scenario-asset-warning" role="status">{assetWarning}</p>}
           {scenario.status === 'inicio' && <section className="scenario-panel" aria-labelledby="scenario-title">
