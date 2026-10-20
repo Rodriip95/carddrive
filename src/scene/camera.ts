@@ -12,9 +12,11 @@ export function createCameraFollow(camera: PerspectiveCamera) {
   const z = Math.max(Math.abs(direction.z), 0.1);
   const baseAngle = Math.atan2(x, z);
   const angles = [baseAngle, Math.PI - baseAngle, Math.PI + baseAngle, Math.PI * 2 - baseAngle];
-  let angle = Math.atan2(direction.x, direction.z);
-  let targetAngle = angle;
-  let selectedCorner = direction.x >= 0 ? (direction.z >= 0 ? 0 : 1) : (direction.z < 0 ? 2 : 3);
+  const initialAngle = Math.atan2(direction.x, direction.z);
+  const initialCorner = direction.x >= 0 ? (direction.z >= 0 ? 0 : 1) : (direction.z < 0 ? 2 : 3);
+  let angle = initialAngle;
+  let targetAngle = initialAngle;
+  let selectedCorner = initialCorner;
   let horizontalDistance = 0;
   let height = 0;
   let shakeTime = 0;
@@ -29,6 +31,13 @@ export function createCameraFollow(camera: PerspectiveCamera) {
       const turn = MathUtils.euclideanModulo(direction * (angles[nextCorner] - angles[selectedCorner]), Math.PI * 2);
       targetAngle += direction * turn;
       selectedCorner = nextCorner;
+    },
+    reset() {
+      angle = initialAngle;
+      targetAngle = initialAngle;
+      selectedCorner = initialCorner;
+      shakeTime = 0;
+      shakeStrength = 0;
     },
     getScreenRight: () => Math.cos(angle) < 0 ? -1 : 1,
     // Guardamos el encuadre cada vez que frameCamera lo recalcula.

@@ -52,12 +52,18 @@ export async function loadVehicle(url: string, modelSize: number, lightHeight = 
     object.position.y = bounce * bounce * Math.abs(floatAmplitude) * amplitudeFactor;
   }
 
+  function reset() {
+    bouncePhase = 0;
+    object.position.y = 0;
+  }
+
   return {
     object,
     size: size.clone().multiplyScalar(scale),
     groundY: -size.y * scale / 2,
     radius: size.length() * scale / 2 + Math.abs(sceneConfig.car.floatAmplitude),
     update,
+    reset,
     updateLights: lights.update,
   };
 }

@@ -78,6 +78,13 @@ export function createRoad(groundY: number) {
       marker.position.z = ((initialZ + offset) % loopLength + loopLength) % loopLength - loopLength / 2;
     });
   }
+
+  function reset() {
+    speed = Math.min(Math.abs(sceneConfig.road.speed), sceneConfig.road.maxSpeed);
+    targetSpeed = speed;
+    offset = 0;
+    update(0);
+  }
   update(0);
-  return { object, update, changeSpeed, applyCollision, getSpeed: () => speed, getTargetSpeed: () => targetSpeed };
+  return { object, update, reset, changeSpeed, applyCollision, getSpeed: () => speed, getTargetSpeed: () => targetSpeed };
 }

@@ -44,10 +44,7 @@ export function createWorld() {
     targetNight = night ? 1 : 0;
   }
 
-  function update(delta: number, camera: PerspectiveCamera) {
-    // Interpolación exponencial: se puede invertir la transición sin saltos de color.
-    const blend = 1 - Math.exp(-5 * delta / Math.max(sceneConfig.sky.transitionSeconds, 0.001));
-    nightAmount += (targetNight - nightAmount) * blend;
+  function applyLighting() {
     const background = scene.background as Color;
     if (nightAmount < 0.5) background.lerpColors(dayColor, sunsetColor, nightAmount * 2);
     else background.lerpColors(sunsetColor, nightColor, (nightAmount - 0.5) * 2);
@@ -57,8 +54,22 @@ export function createWorld() {
     ambientLight.intensity = 2 + (0.65 - 2) * nightAmount;
     sunlight.color.lerpColors(dayAmbient, moonlightColor, nightAmount);
     sunlight.intensity = 3 + (0.8 - 3) * nightAmount;
+  }
+
+  function update(delta: number, camera: PerspectiveCamera) {
+    // Interpolación exponencial: se puede invertir la transición sin saltos de color.
+    const blend = 1 - Math.exp(-5 * delta / Math.max(sceneConfig.sky.transitionSeconds, 0.001));
+    nightAmount += (targetNight - nightAmount) * blend;
+    applyLighting();
     sky.update(nightAmount, camera);
   }
 
-  return { scene, setNight, update, getNightAmount: () => nightAmount };
+  function reset(camera: PerspectiveCamera) {
+    nightAmount = 0;
+    targetNight = 0;
+    applyLighting();
+    sky.update(nightAmount, camera);
+  }
+
+  return { scene, setNight, update, reset, getNightAmount: () => nightAmount };
 }

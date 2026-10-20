@@ -1,82 +1,132 @@
-import { PCFSoftShadowMap, WebGLRenderer } from 'three';
-import { createCamera, createCameraFollow, frameCamera } from './camera';
+import { Color, Fog, Group, Mesh, PerspectiveCamera, Scene } from 'three';
+import { createCameraFollow, frameCamera } from './camera';
 import { loadCar } from './car';
 import { loadTraffic } from './traffic';
 import { createCollisions } from './collisions';
 import { sceneConfig } from './config';
 import { createWorld } from './world';
 import { createRoad } from './road';
-import { createSpeedControls } from '../ui/speed-controls';
-import { createLaneControls } from '../ui/lane-controls';
-import { createCameraControls } from '../ui/camera-controls';
-import { createDayNightControls } from '../ui/day-night-controls';
+import { createSpeedBump } from './speed-bump';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { ScenarioConfig } from '../domain/scenario';
 
-export async function startScene(container: HTMLElement) {
-  const status = document.createElement('p');
-  status.className = 'scene-status';
-  status.setAttribute('role', 'status');
-  status.textContent = 'Cargando los vehículos…';
-  container.appendChild(status);
+export async function createDrivingExperience(scene: Scene, camera: PerspectiveCamera, scenario: ScenarioConfig) {
+  const world = createWorld();
+  // El fondo y la niebla pertenecen a la Scene que administra Canvas.
+  scene.background = world.scene.background;
+  scene.fog = world.scene.fog;
+  const objects = new Group();
+  objects.name = 'experiencia-de-conduccion';
+  objects.add(...world.scene.children);
+  scene.add(objects);
+
+  function dispose() {
+    scene.remove(objects);
+    objects.traverse((child) => {
+      if (child instanceof Mesh) {
+        child.geometry.dispose();
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => material.dispose());
+      }
+    });
+    if (scene.background === world.scene.background) scene.background = new Color(sceneConfig.background);
+    if (scene.fog === world.scene.fog) scene.fog = new Fog(sceneConfig.background, 25, 90);
+  }
 
   try {
-    const { scene, setNight, update: updateWorld, getNightAmount } = createWorld();
-    const camera = createCamera();
     const cameraFollow = createCameraFollow(camera);
-    const renderer = new WebGLRenderer({ antialias: true });
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = PCFSoftShadowMap;
-    container.appendChild(renderer.domElement);
-
     const car = await loadCar();
-    scene.add(car.object);
+    objects.add(car.object);
     const road = createRoad(car.groundY);
-    scene.add(road.object);
+    objects.add(road.object);
+    const speedBump = createSpeedBump(car.groundY, scenario);
+    objects.add(speedBump.object);
+    let assetWarning: string | null = null;
+    if (scenario.visual.asset) {
+      try {
+        const asset = await new GLTFLoader().loadAsync(scenario.visual.asset);
+        asset.scene.position.set(0, car.groundY, 0);
+        asset.scene.scale.setScalar(1);
+        objects.add(asset.scene);
+      } catch {
+        assetWarning = `No se pudo cargar el recurso «${scenario.visual.asset}». Se muestra el objeto educativo alternativo.`;
+        console.warn(assetWarning);
+      }
+    }
     const traffic = await loadTraffic(car.groundY);
-    scene.add(traffic.object);
+    objects.add(traffic.object);
     const collisions = createCollisions(car, traffic, road, cameraFollow);
-    const speedControls = createSpeedControls(container, road);
-    createDayNightControls(container, setNight);
-    const laneControls = createLaneControls(container, car, cameraFollow.getScreenRight);
-    createCameraControls(container, cameraFollow);
+    let viewportWidth = 1;
+    let viewportHeight = 1;
 
-    function resize() {
-      const width = Math.max(container.clientWidth, 1);
-      const height = Math.max(container.clientHeight, 1);
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      frameCamera(camera, car.radius, width / height);
+    function resize(width: number, height: number) {
+      viewportWidth = Math.max(width, 1);
+      viewportHeight = Math.max(height, 1);
+      frameCamera(camera, car.radius, viewportWidth / viewportHeight);
       cameraFollow.captureOffset();
       cameraFollow.update(car.object.position);
     }
-    resize();
-    window.addEventListener('resize', resize);
-    status.remove();
 
-    let previousTime = performance.now();
-    // Three.js llama este callback cada fotograma; update modifica y render dibuja.
-    renderer.setAnimationLoop(() => {
-      const now = performance.now();
-      // Evitamos un salto del camino al volver de una pestaña inactiva.
-      const delta = Math.min((now - previousTime) / 1000, 0.1);
-      previousTime = now;
+    function update(delta: number) {
       const steps = Math.max(1, Math.ceil(delta / sceneConfig.collisions.maxStep));
       const step = delta / steps;
+      let decisionReady = false;
       for (let i = 0; i < steps; i++) {
         collisions.capturePrevious();
         road.update(step);
         car.update(step, road.getSpeed());
-        traffic.update(step, road.getSpeed(), getNightAmount());
+        decisionReady = speedBump.update(step, road.getSpeed()) || decisionReady;
+        traffic.update(step, road.getSpeed(), world.getNightAmount());
         collisions.resolve();
       }
       cameraFollow.update(car.object.position, delta);
-      laneControls.update();
-      updateWorld(delta, camera);
-      car.updateLights(getNightAmount());
-      speedControls.update();
-      renderer.render(scene, camera);
-    });
+      world.update(delta, camera);
+      car.updateLights(world.getNightAmount());
+      return decisionReady;
+    }
+
+    function resolveBump(safeChoice: boolean) {
+      if (safeChoice) {
+        road.changeSpeed(scenario.events.safe.targetSpeed - road.getTargetSpeed());
+        car.triggerBump(scenario.events.safe.bounce);
+        cameraFollow.shake(scenario.events.safe.shake);
+      } else {
+        road.applyCollision();
+        car.triggerBump(scenario.events.unsafe.bounce);
+        cameraFollow.shake(scenario.events.unsafe.shake);
+      }
+      return road.getTargetSpeed();
+    }
+
+    function reset() {
+      road.reset();
+      speedBump.reset();
+      car.reset();
+      traffic.reset();
+      cameraFollow.reset();
+      world.reset(camera);
+      car.updateLights(0);
+      collisions.reset();
+      resize(viewportWidth, viewportHeight);
+      return road.getTargetSpeed();
+    }
+
+    return {
+      update,
+      assetWarning,
+      resize,
+      reset,
+      resolveBump,
+      dispose,
+      setNight: world.setNight,
+      setSpeed: (speed: number) => road.changeSpeed(speed - road.getTargetSpeed()),
+      changeLane: car.changeLane,
+      canChangeLane: car.canChangeLane,
+      getScreenRight: cameraFollow.getScreenRight,
+      rotateCamera: cameraFollow.rotate,
+    };
   } catch (error) {
-    status.textContent = 'No se pudo cargar la escena. Revisá la consola para ver el error.';
-    console.error('Error al iniciar la escena:', error);
+    dispose();
+    throw error;
   }
 }

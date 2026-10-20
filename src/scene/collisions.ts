@@ -72,5 +72,10 @@ export function createCollisions(
     });
   }
 
-  return { capturePrevious, resolve };
+  function reset() {
+    touching.fill(false);
+    capturePrevious();
+  }
+
+  return { capturePrevious, resolve, reset };
 }

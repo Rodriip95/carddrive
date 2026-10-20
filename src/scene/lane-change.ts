@@ -40,5 +40,14 @@ export function createLaneChange(laneWidth: number, changeDistance: number, forw
     yaw = 0;
   }
 
-  return { update, changeLane, canChange, returnToLane, getX: () => x, getYaw: () => yaw };
+  function reset() {
+    lane = 0;
+    targetLane = 0;
+    progress = 1;
+    x = 0;
+    yaw = 0;
+    startX = 0;
+  }
+
+  return { update, changeLane, canChange, returnToLane, reset, getX: () => x, getYaw: () => yaw };
 }

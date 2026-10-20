@@ -9,8 +9,8 @@ export async function loadTraffic(groundY: number) {
   const forward = -(Math.sign(sceneConfig.road.speed) || -1);
   const halfLength = sceneConfig.road.length / 2 - 10;
   const models = [
-    { name: 'truck', url: '/models/camion.glb', size: truckSize, lightHeight: -0.095, lane: -1, z: 12 },
-    { name: 'bus', url: '/models/colectivo.glb', size: busSize, lightHeight: -0.16, lane: 1, z: 22 },
+    { name: 'truck', url: '/models/camion.glb', size: truckSize, lightHeight: -0.095, lane: -1, z: 12, speed: 8 },
+    { name: 'bus', url: '/models/colectivo.glb', size: busSize, lightHeight: -0.16, lane: 1, z: 22, speed: 10 },
   ];
   const vehicles = await Promise.all(models.map(async (model) => {
     const vehicle = await loadVehicle(model.url, model.size, model.lightHeight);
@@ -21,8 +21,8 @@ export async function loadTraffic(groundY: number) {
     placement.rotation.y = forward === 1 ? 0 : Math.PI;
     placement.add(vehicle.object);
     object.add(placement);
-    const speed = MathUtils.randFloat(minSpeed, maxSpeed);
-    return { vehicle, placement, speed, currentSpeed: speed };
+    const speed = MathUtils.clamp(model.speed, minSpeed, maxSpeed);
+    return { vehicle, placement, initialPosition: placement.position.clone(), speed, currentSpeed: speed };
   }));
 
   function update(delta: number, playerSpeed: number, nightAmount: number) {
@@ -39,5 +39,14 @@ export async function loadTraffic(groundY: number) {
     }
   }
 
-  return { object, update, vehicles };
+  function reset(nightAmount = 0) {
+    for (const entry of vehicles) {
+      entry.placement.position.copy(entry.initialPosition);
+      entry.currentSpeed = entry.speed;
+      entry.vehicle.reset();
+      entry.vehicle.updateLights(nightAmount);
+    }
+  }
+
+  return { object, update, reset, vehicles };
 }
