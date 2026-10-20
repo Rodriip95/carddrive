@@ -17,7 +17,13 @@ export function createCameraFollow(camera: PerspectiveCamera) {
   let selectedCorner = direction.x >= 0 ? (direction.z >= 0 ? 0 : 1) : (direction.z < 0 ? 2 : 3);
   let horizontalDistance = 0;
   let height = 0;
+  let shakeTime = 0;
+  let shakeStrength = 0;
   return {
+    shake(strength: number) {
+      shakeTime = sceneConfig.collisions.shakeDuration;
+      shakeStrength = MathUtils.clamp(strength, 0.25, 1);
+    },
     rotate(direction: -1 | 1) {
       const nextCorner = (selectedCorner + direction + 4) % 4;
       const turn = MathUtils.euclideanModulo(direction * (angles[nextCorner] - angles[selectedCorner]), Math.PI * 2);
@@ -37,6 +43,14 @@ export function createCameraFollow(camera: PerspectiveCamera) {
       offset.set(Math.sin(angle) * horizontalDistance, height, Math.cos(angle) * horizontalDistance);
       camera.position.copy(offset).add(target);
       camera.lookAt(target);
+      if (shakeTime > 0) {
+        shakeTime = Math.max(0, shakeTime - delta);
+        const fade = shakeTime / sceneConfig.collisions.shakeDuration;
+        const amplitude = sceneConfig.collisions.shakeAmplitude * shakeStrength * fade * fade;
+        // El desplazamiento es local a la cámara y no altera el encuadre guardado.
+        camera.translateX(Math.sin(shakeTime * 95) * amplitude);
+        camera.translateY(Math.sin(shakeTime * 127) * amplitude * 0.7);
+      }
     },
   };
 }

@@ -1,7 +1,7 @@
 import { BoxGeometry, Group, MathUtils, Mesh, MeshStandardMaterial, Object3D, Raycaster, SpotLight, Vector3 } from 'three';
 import { sceneConfig } from './config';
 
-export function createCarLights(car: Group, size: Vector3) {
+export function createCarLights(car: Group, size: Vector3, height = sceneConfig.car.lights.height) {
   const object = new Group();
   const frontMaterial = new MeshStandardMaterial({
     color: 0xffefd0, emissive: 0xffe6b0, emissiveIntensity: 0, roughness: 0.2,
@@ -17,7 +17,7 @@ export function createCarLights(car: Group, size: Vector3) {
   for (const end of [1, -1]) {
     for (const side of [-1, 1]) {
       const x = side * size.x * 0.34;
-      const y = size.y * sceneConfig.car.lights.height;
+      const y = size.y * height;
       // Buscamos la superficie del GLB para no dejar las luces flotando delante del paragolpes.
       raycaster.set(new Vector3(x, y, end * (size.z + 1)), new Vector3(0, 0, -end));
       const hit = raycaster.intersectObject(car, true)[0];

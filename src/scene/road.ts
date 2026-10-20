@@ -57,6 +57,12 @@ export function createRoad(groundY: number) {
     targetSpeed = Math.max(0, Math.min(sceneConfig.road.maxSpeed, targetSpeed + change));
   }
 
+  function applyCollision(speedLimit = sceneConfig.road.maxSpeed) {
+    speed = Math.max(0, Math.min(speed * sceneConfig.collisions.speedRetention, speedLimit));
+    // Bajamos también el objetivo para que no vuelva a acelerar solo después del choque.
+    targetSpeed = speed;
+  }
+
   function update(delta: number) {
     // Integramos la distancia: cambiar de velocidad no reposiciona las marcas.
     const difference = targetSpeed - speed;
@@ -73,5 +79,5 @@ export function createRoad(groundY: number) {
     });
   }
   update(0);
-  return { object, update, changeSpeed, getSpeed: () => speed, getTargetSpeed: () => targetSpeed };
+  return { object, update, changeSpeed, applyCollision, getSpeed: () => speed, getTargetSpeed: () => targetSpeed };
 }

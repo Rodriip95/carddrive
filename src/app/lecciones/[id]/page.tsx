@@ -1,0 +1,44 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { getModule, modules } from '../../../content/modules';
+import { getQuestionsByModule } from '../../../content/questions';
+import { QuestionCard } from '../../../components/QuestionCard';
+
+type LessonPageProps = { params: Promise<{ id: string }> };
+
+export function generateStaticParams() {
+  return modules.map(({ id }) => ({ id }));
+}
+
+export async function generateMetadata({ params }: LessonPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const module = getModule(id);
+  if (!module) return { title: 'Lección no encontrada' };
+  return { title: module.title, description: module.description };
+}
+
+export default async function LessonPage({ params }: LessonPageProps) {
+  const { id } = await params;
+  const module = getModule(id);
+  if (!module) notFound();
+  const questions = getQuestionsByModule(module.id);
+
+  return (
+    <main className="lesson-page">
+      <Link className="back-link" href="/">← Volver a módulos</Link>
+      <article className="lesson-panel">
+        <p className="eyebrow">MÓDULO · {module.durationMinutes} MIN</p>
+        <h1>{module.title}</h1>
+        <p className="hero-copy">{module.description}</p>
+        <h2>En esta lección vas a</h2>
+        <ol className="lesson-list">
+          {module.lesson.map((item) => <li key={item}>{item}</li>)}
+        </ol>
+        {questions.length > 0 ? questions.map((question) => (
+          <QuestionCard key={question.id} question={question} />
+        )) : <p className="lesson-note">El contenido interactivo de esta lección estará disponible próximamente.</p>}
+      </article>
+    </main>
+  );
+}

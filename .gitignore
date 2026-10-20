@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.next
+.next-kan16-17-review/
+out
 *.local
 
 # Editor directories and files

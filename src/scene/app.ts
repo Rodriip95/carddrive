@@ -1,6 +1,9 @@
 import { PCFSoftShadowMap, WebGLRenderer } from 'three';
 import { createCamera, createCameraFollow, frameCamera } from './camera';
 import { loadCar } from './car';
+import { loadTraffic } from './traffic';
+import { createCollisions } from './collisions';
+import { sceneConfig } from './config';
 import { createWorld } from './world';
 import { createRoad } from './road';
 import { createSpeedControls } from '../ui/speed-controls';
@@ -12,7 +15,7 @@ export async function startScene(container: HTMLElement) {
   const status = document.createElement('p');
   status.className = 'scene-status';
   status.setAttribute('role', 'status');
-  status.textContent = 'Cargando el auto…';
+  status.textContent = 'Cargando los vehículos…';
   container.appendChild(status);
 
   try {
@@ -28,6 +31,9 @@ export async function startScene(container: HTMLElement) {
     scene.add(car.object);
     const road = createRoad(car.groundY);
     scene.add(road.object);
+    const traffic = await loadTraffic(car.groundY);
+    scene.add(traffic.object);
+    const collisions = createCollisions(car, traffic, road, cameraFollow);
     const speedControls = createSpeedControls(container, road);
     createDayNightControls(container, setNight);
     const laneControls = createLaneControls(container, car, cameraFollow.getScreenRight);
@@ -53,8 +59,15 @@ export async function startScene(container: HTMLElement) {
       // Evitamos un salto del camino al volver de una pestaña inactiva.
       const delta = Math.min((now - previousTime) / 1000, 0.1);
       previousTime = now;
-      road.update(delta);
-      car.update(delta, road.getSpeed());
+      const steps = Math.max(1, Math.ceil(delta / sceneConfig.collisions.maxStep));
+      const step = delta / steps;
+      for (let i = 0; i < steps; i++) {
+        collisions.capturePrevious();
+        road.update(step);
+        car.update(step, road.getSpeed());
+        traffic.update(step, road.getSpeed(), getNightAmount());
+        collisions.resolve();
+      }
       cameraFollow.update(car.object.position, delta);
       laneControls.update();
       updateWorld(delta, camera);
@@ -63,7 +76,7 @@ export async function startScene(container: HTMLElement) {
       renderer.render(scene, camera);
     });
   } catch (error) {
-    status.textContent = 'No se pudo mostrar el auto. Revisá la consola para ver el error.';
+    status.textContent = 'No se pudo cargar la escena. Revisá la consola para ver el error.';
     console.error('Error al iniciar la escena:', error);
   }
 }

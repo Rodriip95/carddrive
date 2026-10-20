@@ -13,6 +13,19 @@ export const sceneConfig = {
     speedStep: 4, // Cambio de velocidad objetivo por pulsación.
     acceleration: 6, // Unidades por segundo al cuadrado; menor valor = transición más lenta.
   },
+  collisions: {
+    gap: 0.04, // Separación mínima entre las cajas de los vehículos.
+    speedRetention: 0.55, // Conserva el 55 % de la velocidad al recibir un impacto.
+    shakeDuration: 0.45,
+    shakeAmplitude: 0.12,
+    maxStep: 1 / 120, // Pasos cortos para no atravesar vehículos entre fotogramas.
+  },
+  traffic: {
+    minSpeed: 4, // Cada vehículo elige una velocidad propia al cargar, en unidades por segundo.
+    maxSpeed: 14,
+    truckSize: 4.4,
+    busSize: 5.8,
+  },
   camera: {
     fov: 45,
     direction: { x: 1, y: 0.5, z: -2 },

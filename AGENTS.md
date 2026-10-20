@@ -6,16 +6,16 @@ Responde siempre en español. El objetivo es aprender Three.js: explica brevemen
 
 ## Project Structure & Module Organization
 
-El proyecto usa Vite, TypeScript y Three.js, sin framework de interfaz. `index.html` es la entrada del navegador y `src/main.ts` inicia la aplicación. `src/scene/app.ts` coordina la carga, el renderizado y el tamaño de ventana; `world.ts` crea la escena y las luces; `camera.ts` calcula el encuadre; `car.ts` carga el modelo y expone `update(delta, roadSpeed)`; `lane-change.ts` calcula los cambios suaves entre carriles y `road.ts` anima la carretera. `src/ui/` contiene los controles de velocidad y carril. La cámara acompaña la posición del auto. Los parámetros de cámara y movimiento están en `src/scene/config.ts`. `src/style.css` define el canvas y los mensajes de estado.
+El proyecto usa Next.js App Router, React, TypeScript, Three.js y React Three Fiber. `src/app/` contiene las rutas y metadatos SEO; `src/content/modules.ts` define el catálogo educativo; `src/domain/` contiene los modelos y validadores independientes de la interfaz. `src/components/` contiene las partes interactivas, incluida la escena R3F. `src/scene/` conserva la lógica Three.js existente para reutilizarla y migrarla gradualmente. Los modelos glTF/GLB servidos directamente por Next.js están en `public/models/`; otras imágenes y recursos fuente permanecen en `src/assets/`.
 
-Keep imported images, SVGs, and 3D models in `src/assets/`; use `public/` for static files served directly. TypeScript configuration lives in `tsconfig.json`. Production output is generated in `dist/`. There is currently no test directory.
+Keep original/imported assets in `src/assets/` and files served directly by URL in `public/`. TypeScript configuration lives in `tsconfig.json`. Next.js production output is generated in `.next/`. There is currently no test directory.
 
 ## Build, Test, and Development Commands
 
 - `npm ci`: install dependencies from the committed lockfile when available.
-- `npm run dev`: start the Vite development server with live updates.
-- `npm run build`: run TypeScript checks and generate the production bundle in `dist/`.
-- `npm run preview`: serve the production bundle locally after building.
+- `npm run dev`: start the Next.js development server with live updates.
+- `npm run build`: run the optimized Next.js production build and TypeScript checks.
+- `npm start`: serve the production build locally after building.
 
 ## Coding Style & Naming Conventions
 
@@ -35,3 +35,13 @@ Pull requests should describe the change, list validation performed, and link re
 
 
 
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
