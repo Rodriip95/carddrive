@@ -7,7 +7,6 @@ import { sceneConfig } from './config';
 import { createWorld } from './world';
 import { createRoad } from './road';
 import { createScenarioObject } from './scenario-object';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ScenarioConfig } from '../domain/scenario';
 import type { ScenarioAction } from '../domain/scenario-controller';
 
@@ -43,20 +42,10 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
     objects.add(car.object);
     const road = createRoad(car.groundY);
     objects.add(road.object);
-    const scenarioObject = createScenarioObject(car.groundY, scenario);
+    const scenarioObject = await createScenarioObject(car.groundY, scenario);
     objects.add(scenarioObject.object);
-    let assetWarning: string | null = null;
-    if (scenario.visual.asset) {
-      try {
-        const asset = await new GLTFLoader().loadAsync(scenario.visual.asset);
-        asset.scene.position.set(0, car.groundY, 0);
-        asset.scene.scale.setScalar(1);
-        objects.add(asset.scene);
-      } catch {
-        assetWarning = `No se pudo cargar el recurso «${scenario.visual.asset}». Se muestra el objeto educativo alternativo.`;
-        console.warn(assetWarning);
-      }
-    }
+    road.setMarkingGap(scenarioObject.getMarkingGap());
+    const assetWarning = scenarioObject.assetWarning;
     const traffic = await loadTraffic(car.groundY);
     objects.add(traffic.object);
     const collisions = createCollisions(car, traffic, road, cameraFollow);
@@ -76,10 +65,12 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
     // Maniobra que el usuario debe ejecutar tras elegir la opción correcta.
     let action: ScenarioAction | null = null;
     let actionResult: 'success' | 'failure' | null = null;
+    let bumpTooFast = false;
 
     function beginAction(next: ScenarioAction) {
       action = next;
       actionResult = null;
+      bumpTooFast = false;
     }
 
     function evaluateAction() {
@@ -87,7 +78,11 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       // Distancia entre el frente del auto y la línea; el auto está en Z=0 mirando hacia +Z.
       const gap = scenarioObject.getDistance() - car.size.z / 2;
       const speed = road.getSpeed();
-      if (action.kind === 'stop-before-line') {
+      if (scenario.visual.kind === 'speed-bump' && action.kind === 'slow-to') {
+        // Se evalúa el paso completo, no la respuesta ni un temporizador.
+        if (gap <= 1 && scenarioObject.getDistance() >= -car.size.z / 2 - 0.5 && speed > action.maxSpeed) bumpTooFast = true;
+        if (scenarioObject.getDistance() < -car.size.z / 2 - 0.5) actionResult = bumpTooFast ? 'failure' : 'success';
+      } else if (action.kind === 'stop-before-line') {
         if (gap <= 0) actionResult = 'failure';
         else if (speed < 0.05) actionResult = 'success';
       } else if (gap <= 1) {
@@ -123,17 +118,21 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
         decisionReady = scenarioObject.update(step, road.getSpeed()) || decisionReady;
         traffic.update(step, road.getSpeed(), world.getNightAmount());
         collisions.resolve();
+        if (scenario.visual.kind === 'speed-bump') car.followSurface(step, road.getSpeed(), scenarioObject.getSurfaceHeight);
         evaluateAction();
       }
       cameraFollow.update(car.object.position, delta);
+      road.setMarkingGap(scenarioObject.getMarkingGap());
       world.update(delta);
       car.updateLights(world.getNightAmount());
       const result = actionResult;
-      if (result) action = null;
+      if (result) { action = null; actionResult = null; }
       return { decisionReady, actionResult: result };
     }
 
     function resolveDecision(safeChoice: boolean) {
+      // En la loma el contacto real gobierna la altura: elegir una opción no provoca un salto.
+      if (scenario.visual.kind === 'speed-bump') return road.getTargetSpeed();
       if (safeChoice) {
         const event = scenario.events.safe;
         // Con maniobra, la velocidad ya la manejó el usuario; sin ella aplicamos la velocidad objetivo.
@@ -155,8 +154,10 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
     function reset() {
       action = null;
       actionResult = null;
+      bumpTooFast = false;
       road.reset();
       scenarioObject.reset();
+      road.setMarkingGap(scenarioObject.getMarkingGap());
       car.reset();
       traffic.reset();
       cameraFollow.reset();

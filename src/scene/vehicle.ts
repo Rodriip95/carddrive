@@ -28,9 +28,11 @@ export async function loadVehicle(url: string, modelSize: number, lightHeight = 
   const scale = modelSize / longestSide;
   scaledModel.scale.setScalar(scale);
   const object = new Group();
-  object.add(scaledModel);
+  const body = new Group();
+  body.add(scaledModel);
+  object.add(body);
   const lights = createCarLights(object, size.clone().multiplyScalar(scale), lightHeight);
-  object.add(lights.object);
+  body.add(lights.object);
 
   let bouncePhase = 0;
   function update(delta: number, speed: number) {
@@ -59,6 +61,7 @@ export async function loadVehicle(url: string, modelSize: number, lightHeight = 
 
   return {
     object,
+    body,
     size: size.clone().multiplyScalar(scale),
     groundY: -size.y * scale / 2,
     radius: size.length() * scale / 2 + Math.abs(sceneConfig.car.floatAmplitude),

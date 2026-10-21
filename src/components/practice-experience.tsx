@@ -14,7 +14,7 @@ import { useLearningProgress } from './ProgressProvider';
 
 type DrivingExperienceApi = Awaited<ReturnType<typeof createDrivingExperience>>;
 
-export default function PracticeExperience({ moduleId }: { moduleId?: string }) {
+export default function PracticeExperience({ moduleId, initialScenarioId }: { moduleId?: string; initialScenarioId?: string }) {
   // En modo módulo la práctica sigue la secuencia del módulo; sin módulo, el usuario elige.
   const learningModule = moduleId ? getModule(moduleId) : undefined;
   const scenarios = learningModule
@@ -27,7 +27,7 @@ export default function PracticeExperience({ moduleId }: { moduleId?: string }) 
   const [sceneLoadState, setSceneLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
   const [practiceMode, setPracticeMode] = useState<'3d' | 'sin-3d'>('3d');
-  const [selectedScenarioId, setSelectedScenarioId] = useState(scenarios[0]?.id ?? '');
+  const [selectedScenarioId, setSelectedScenarioId] = useState(scenarios.find((item) => item.id === initialScenarioId)?.id ?? scenarios[0]?.id ?? '');
   const [assetWarning, setAssetWarning] = useState<string | null>(null);
   const [controller] = useState(createScenarioController);
   const [showingConsequence, setShowingConsequence] = useState(false);
@@ -220,7 +220,7 @@ export default function PracticeExperience({ moduleId }: { moduleId?: string }) 
   );
 
   // Selector libre o, en modo módulo, lista fija de la secuencia.
-  const scenarioPicker = learningModule ? null : (
+  const scenarioPicker = (
     <>
       <label className="scenario-picker-label" htmlFor="scenario-picker">Elegí una situación para practicar</label>
       <select id="scenario-picker" className="scenario-picker" value={selectedScenarioId} onChange={(event) => goToScenario(event.target.value)}>
@@ -242,7 +242,7 @@ export default function PracticeExperience({ moduleId }: { moduleId?: string }) 
   const moduleNext = learningModule && scenario.status === 'resultado' && scenario.correct && (
     nextScenario
       ? <button type="button" className="answer-button" onClick={() => goToScenario(nextScenario.id)}>Siguiente situación →</button>
-      : <Link className="primary-link" href={`/lecciones/${learningModule.id}`}>Módulo completado: volver a la lección</Link>
+      : <Link className="primary-link" href={`/lecciones/${learningModule.id}`}>Volver al listado de situaciones</Link>
   );
 
   const failureMessage = scenario.status === 'resultado' && scenario.failure === 'accion'

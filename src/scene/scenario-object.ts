@@ -15,45 +15,88 @@ import {
   Vector3,
 } from 'three';
 import { sceneConfig } from './config';
+import { bumpHeightAt, loadSpeedBump } from './speed-bump';
 import type { ScenarioConfig } from '../domain/scenario';
 
-function addCrossing(object: Group, groundY: number, z: number) {
+// La línea de detención está en Z=0; el auto avanza hacia +Z.
+const intersection = { centerZ: 10, width: 12, length: 100, markingStart: -2, markingEnd: 22 };
+const crossingDepth = 2.8;
+
+function addCrossing(object: Group, groundY: number, z: number, width = sceneConfig.road.width, x = 0, rotation = 0) {
+  const crossing = new Group();
+  crossing.name = 'senda-peatonal';
+  crossing.position.set(x, groundY + 0.035, z);
+  crossing.rotation.y = rotation;
   const material = new MeshStandardMaterial({ color: 0xf7f4e8, roughness: 0.9 });
-  for (let index = -3; index <= 3; index++) {
-    const stripe = new Mesh(new BoxGeometry(0.28, 0.025, 2.2), material);
-    stripe.position.set(index * 0.52, groundY + 0.02, z);
+  // Distribuimos las franjas según el ancho, con el mismo margen en ambas orillas.
+  const margin = 0.12;
+  const count = Math.max(2, Math.round(width / 0.7));
+  const stripeWidth = (width - margin * 2) / (count + (count - 1) * 0.6);
+  const spacing = stripeWidth * 1.6;
+  const geometry = new PlaneGeometry(stripeWidth, crossingDepth);
+  for (let index = 0; index < count; index++) {
+    const stripe = new Mesh(geometry, material);
+    stripe.rotation.x = -Math.PI / 2;
+    stripe.position.x = -width / 2 + margin + stripeWidth / 2 + index * spacing;
     stripe.receiveShadow = true;
-    object.add(stripe);
+    crossing.add(stripe);
   }
+  object.add(crossing);
+}
+
+function addRoadPaint(object: Group, groundY: number, x: number, z: number, width: number, length: number, color = 0xf7f4e8) {
+  const paint = new Mesh(new PlaneGeometry(width, length), new MeshStandardMaterial({ color, roughness: 0.9 }));
+  paint.rotation.x = -Math.PI / 2;
+  paint.position.set(x, groundY + 0.035, z);
+  paint.receiveShadow = true;
+  object.add(paint);
 }
 
 function addStopLine(object: Group, groundY: number, z: number) {
-  const line = new Mesh(
-    new BoxGeometry(sceneConfig.road.width, 0.025, 0.18),
-    new MeshStandardMaterial({ color: 0xf7f4e8, roughness: 0.9 }),
-  );
-  line.position.set(0, groundY + 0.025, z);
-  line.receiveShadow = true;
-  object.add(line);
+  addRoadPaint(object, groundY, 0, z, sceneConfig.road.width - 0.24, 0.3);
 }
 
 function addIntersection(object: Group, groundY: number) {
-  const crossRoad = new Mesh(
-    new PlaneGeometry(sceneConfig.road.width + 8, 9),
-    new MeshStandardMaterial({ color: 0x343b43, roughness: 1 }),
-  );
-  crossRoad.rotation.x = -Math.PI / 2;
-  crossRoad.position.set(0, groundY + 0.012, -9);
-  crossRoad.receiveShadow = true;
-  object.add(crossRoad);
+  const { centerZ, width, length, markingStart, markingEnd } = intersection;
+  const roadWidth = sceneConfig.road.width;
+  function pavement(w: number, depth: number, height: number, color: number) {
+    const mesh = new Mesh(new PlaneGeometry(w, depth), new MeshStandardMaterial({ color, roughness: 1 }));
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(0, groundY + height, centerZ);
+    mesh.receiveShadow = true;
+    object.add(mesh);
+  }
+  pavement(length, width + 0.8, 0.004, 0xb9ae91);
+  pavement(length, width, 0.018, 0x343b43);
+  // Este paño tapa las líneas longitudinales antiguas dentro del cruce y las sendas.
+  pavement(roadWidth, markingEnd - markingStart, 0.02, 0x343b43);
   addStopLine(object, groundY, 0);
-  addCrossing(object, groundY, -4.3);
+  addCrossing(object, groundY, 2);
+  addCrossing(object, groundY, 18);
+  for (const side of [-1, 1]) {
+    addCrossing(object, groundY, centerZ, width, side * (roadWidth / 2 + 1.8), Math.PI / 2);
+    // Detención en el carril que ingresa desde cada brazo transversal.
+    addRoadPaint(object, groundY, side * (roadWidth / 2 + 3.8), centerZ + side * width / 4, 0.3, width / 2 - 0.24);
+    const start = roadWidth / 2 + 5;
+    const end = length / 2;
+    const segmentLength = end - start;
+    for (const edge of [-1, 1]) {
+      addRoadPaint(object, groundY, side * (start + end) / 2, centerZ + edge * (width / 2 - 0.2), segmentLength, 0.1);
+      // Doble línea central, interrumpida antes de la senda y del área de cruce.
+      addRoadPaint(object, groundY, side * (start + end) / 2, centerZ + edge * 0.1, segmentLength, 0.1, 0xffe5a0);
+      for (let distance = start; distance + 2.5 < end; distance += 5) {
+        addRoadPaint(object, groundY, side * (distance + 1.25), centerZ + edge * width / 4, 2.5, 0.1);
+      }
+    }
+    // Bordes de la calle principal hasta las esquinas, sin cruzar la calzada transversal.
+    for (const z of [1, 19]) addRoadPaint(object, groundY, side * (roadWidth / 2 - 0.2), z, 0.09, 6);
+  }
 }
 
 function addPriorityVehicle(object: Group, groundY: number) {
   // Auto de referencia en la vía transversal, llegando desde la derecha.
   const vehicle = new Group();
-  vehicle.position.set(-4.2, groundY, -9);
+  vehicle.position.set(-10, groundY, intersection.centerZ - intersection.width / 4);
   const body = new Mesh(
     new BoxGeometry(2.3, 0.65, 1.05),
     new MeshStandardMaterial({ color: 0x2878a8, roughness: 0.65 }),
@@ -134,11 +177,11 @@ function addStopSign(object: Group, groundY: number) {
     new CylinderGeometry(0.05, 0.065, 2.2, 8),
     new MeshStandardMaterial({ color: 0x7b8580, metalness: 0.2, roughness: 0.7 }),
   );
-  pole.position.set(signX, groundY + 1.1, 8);
+  pole.position.set(signX, groundY + 1.1, -0.8);
   object.add(pole);
 
   const sign = new Group();
-  sign.position.set(signX, groundY + 2.65, 8);
+  sign.position.set(signX, groundY + 2.65, -0.8);
   sign.rotation.y = Math.PI;
   object.add(sign);
   const octagon = new Shape();
@@ -189,14 +232,14 @@ function addTrafficLight(object: Group, groundY: number) {
     new CylinderGeometry(0.055, 0.075, 3.2, 8),
     new MeshStandardMaterial({ color: 0x59645f, metalness: 0.25, roughness: 0.65 }),
   );
-  pole.position.set(lightX, groundY + 1.6, 8);
+  pole.position.set(lightX, groundY + 1.6, -0.8);
   object.add(pole);
 
   const housing = new Mesh(
     new BoxGeometry(0.7, 1.75, 0.48),
     new MeshStandardMaterial({ color: 0x202927, roughness: 0.5 }),
   );
-  housing.position.set(lightX, groundY + 3.1, 8);
+  housing.position.set(lightX, groundY + 3.1, -0.8);
   object.add(housing);
 
   const lights = (['red', 'amber', 'green'] as const).map((color, index) => {
@@ -207,7 +250,7 @@ function addTrafficLight(object: Group, groundY: number) {
       roughness: 0.35,
     });
     const bulb = new Mesh(new CircleGeometry(0.2, 20), material);
-    bulb.position.set(lightX, groundY + 3.65 - index * 0.55, 7.74);
+    bulb.position.set(lightX, groundY + 3.65 - index * 0.55, -1.06);
     object.add(bulb);
     return bulb;
   });
@@ -220,31 +263,20 @@ function addTrafficLight(object: Group, groundY: number) {
   };
 }
 
-export function createScenarioObject(groundY: number, config: ScenarioConfig) {
+export async function createScenarioObject(groundY: number, config: ScenarioConfig) {
   const object = new Group();
   object.name = config.visual.label;
   let setLight: ((active: 'red' | 'amber' | 'green') => void) | null = null;
   let waitingForGreen = false;
   let greenWait = 0;
   let decisionShown = false;
+  let assetWarning: string | null = null;
 
   if (config.visual.kind === 'speed-bump') {
-    const bump = new Mesh(
-      new CylinderGeometry(0.24, 0.24, sceneConfig.road.width, 32, 1, false, 0, Math.PI),
-      new MeshStandardMaterial({ color: 0xf0c34e, roughness: 0.75 }),
-    );
-    bump.rotation.z = Math.PI / 2;
-    bump.position.y = groundY;
-    bump.castShadow = true;
-    bump.receiveShadow = true;
-    object.add(bump);
-    const stripeMaterial = new MeshStandardMaterial({ color: 0x252a2d, roughness: 0.85 });
-    for (const z of [-0.1, 0, 0.1]) {
-      const stripe = new Mesh(new BoxGeometry(sceneConfig.road.width, 0.015, 0.045), stripeMaterial);
-      stripe.position.set(0, groundY + 0.24, z);
-      stripe.receiveShadow = true;
-      object.add(stripe);
-    }
+    const bump = await loadSpeedBump(config.visual.asset, sceneConfig.road.width);
+    bump.object.position.y = groundY;
+    object.add(bump.object);
+    assetWarning = bump.warning;
     addWarningSign(object, groundY, config);
   } else if (config.visual.kind === 'pedestrian-crossing') {
     addCrossing(object, groundY, 0);
@@ -293,5 +325,19 @@ export function createScenarioObject(groundY: number, config: ScenarioConfig) {
   }
 
   // Distancia desde el origen del objeto (línea de detención o inicio de la marca) al centro del auto.
-  return { object, update, reset, waitForGreen, getDistance: () => object.position.z };
+  return {
+    object, update, reset, waitForGreen, assetWarning,
+    getDistance: () => object.position.z,
+    getMarkingGap: () => {
+      if (config.visual.kind === 'speed-bump') return null;
+      const crossingOnly = config.visual.kind === 'pedestrian-crossing';
+      return {
+        start: object.position.z + (crossingOnly ? -crossingDepth / 2 - 0.3 : intersection.markingStart),
+        end: object.position.z + (crossingOnly ? crossingDepth / 2 + 0.3 : intersection.markingEnd),
+        hidePosts: !crossingOnly,
+      };
+    },
+    getSurfaceHeight: (x: number, z: number) => groundY + (config.visual.kind === 'speed-bump'
+      ? bumpHeightAt(x, z - object.position.z, sceneConfig.road.width) : 0),
+  };
 }

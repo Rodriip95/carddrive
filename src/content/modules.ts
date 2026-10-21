@@ -11,6 +11,14 @@ export interface CatalogModule extends LearningModule {
 
 export const modules: CatalogModule[] = [
   {
+    id: 'situaciones', title: 'Situaciones',
+    description: 'Elegí una situación del camino y practicala al volante del simulador.',
+    icon: '↟', durationMinutes: 12, level: 'Inicial', mode: 'simulador',
+    lesson: ['Anticipá cambios en la calzada, como una loma de burro.', 'Controlá la velocidad y observá cómo responde el auto.', 'Practicá cruces, señales y prioridades de paso.'],
+    questionIds: [],
+    scenarioIds: ['loma-de-burro', 'cruce-peatonal', 'senal-pare', 'semaforo-rojo-cruce-peatonal', 'prioridad-derecha-marcas-viales'],
+  },
+  {
     id: 'senales', title: 'Señales de tránsito',
     description: 'Aprendé a reconocer señales y anticipar qué te piden en el camino.',
     icon: '◉', durationMinutes: 8, level: 'Inicial', mode: 'preguntas',

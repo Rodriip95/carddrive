@@ -8,11 +8,11 @@ export const metadata: Metadata = {
   description: 'Practicá situaciones de conducción con una experiencia interactiva 3D o una alternativa ilustrada sin Canvas.',
 };
 
-type PracticePageProps = { searchParams: Promise<{ modulo?: string | string[] }> };
+type PracticePageProps = { searchParams: Promise<{ modulo?: string | string[]; situacion?: string | string[] }> };
 
 export default async function PracticePage({ searchParams }: PracticePageProps) {
   // /practica?modulo=normas sigue la secuencia de situaciones de ese módulo.
-  const { modulo } = await searchParams;
+  const { modulo, situacion } = await searchParams;
   const moduleId = typeof modulo === 'string' && getModule(modulo)?.mode === 'simulador' ? modulo : undefined;
   const learningModule = moduleId ? getModule(moduleId) : undefined;
 
@@ -27,7 +27,7 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
           ? 'Elegí qué hacer en cada situación y después ejecutalo con el auto.'
           : 'Elegí la experiencia 3D o el modo sin 3D para practicar decisiones reales de conducción.'}</p>
       </div>
-      <PracticeExperience key={moduleId ?? 'libre'} moduleId={moduleId} />
+      <PracticeExperience key={`${moduleId ?? 'libre'}:${situacion ?? ''}`} moduleId={moduleId} initialScenarioId={typeof situacion === 'string' ? situacion : undefined} />
     </main>
   );
 }

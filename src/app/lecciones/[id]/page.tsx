@@ -8,6 +8,7 @@ import { SignalCatalog } from '../../../components/SignalCatalog';
 import { trafficSignals } from '../../../content/signals';
 import { PreDriveChecklist } from '../../../components/PreDriveChecklist';
 import { LessonCompletion } from '../../../components/LessonCompletion';
+import { scenarios } from '../../../content/scenarios';
 
 type LessonPageProps = { params: Promise<{ id: string }> };
 
@@ -44,6 +45,17 @@ export default async function LessonPage({ params }: LessonPageProps) {
         {module.mode === 'simulador' ? (
           <>
             <p className="lesson-note">Este módulo se aprende conduciendo: en cada situación elegís qué hacer y después tenés que ejecutarlo con el auto.</p>
+            <h2>Situaciones para practicar</h2>
+            <div className="module-grid">
+              {module.scenarioIds.map((id) => {
+                const situation = scenarios.find((item) => item.id === id);
+                return situation ? <article className="module-card" key={id}>
+                  <h3>{situation.title}</h3>
+                  <p>{situation.intro}</p>
+                  <Link className="module-link" href={`/practica?modulo=${module.id}&situacion=${id}`}>Practicar situación →</Link>
+                </article> : null;
+              })}
+            </div>
             <Link className="primary-link" href={`/practica?modulo=${module.id}`}>Entrar al simulador →</Link>
             <LessonCompletion module={module} />
           </>

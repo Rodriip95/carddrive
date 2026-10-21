@@ -1,10 +1,12 @@
 import { sceneConfig } from './config';
 import { createLaneChange } from './lane-change';
 import { loadVehicle } from './vehicle';
+import { createWheelContact } from './wheel-contact';
 
 export async function loadCar() {
   const vehicle = await loadVehicle('/models/car.glb', sceneConfig.car.size);
   const { object } = vehicle;
+  const contact = createWheelContact(object, vehicle.body, vehicle.groundY);
   let currentSpeed = Math.abs(sceneConfig.road.speed);
   const laneChange = createLaneChange(
     sceneConfig.road.width / 3,
@@ -34,9 +36,11 @@ export async function loadCar() {
   return {
     ...vehicle,
     update,
+    followSurface: contact.update,
     reset() {
       laneChange.reset();
       vehicle.reset();
+      contact.reset();
       bumpHeight = 0;
       bumpVelocity = 0;
       object.position.set(0, 0, 0);

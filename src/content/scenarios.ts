@@ -5,10 +5,10 @@ export const scenarios: ScenarioConfig[] = [
     id: 'loma-de-burro',
     title: 'Loma de burro',
     intro: 'Seguí la señal de advertencia y elegí cómo aproximarte. La situación aparecerá al acercarte a la loma.',
-    visual: { kind: 'speed-bump', label: 'Loma de burro' },
+    visual: { kind: 'speed-bump', label: 'Loma de burro', asset: '/models/equipamiento-vial/loma-de-burro.glb' },
     trigger: { kind: 'distance', startDistance: 56, decisionDistance: 14 },
     events: {
-      safe: { effect: 'adjust-speed', targetSpeed: 4, bounce: 0.7, shake: 0.25 },
+      safe: { effect: 'adjust-speed', targetSpeed: 4, bounce: 0, shake: 0 },
       unsafe: { effect: 'impact', bounce: 2.5, shake: 1 },
     },
     decision: {
@@ -23,7 +23,7 @@ export const scenarios: ScenarioConfig[] = [
       explanation: 'La señal anticipa un cambio en la calzada. Reducir la velocidad antes de la loma y cruzarla suavemente ayuda a mantener el control y evita frenadas o aceleraciones bruscas.',
       action: {
         kind: 'slow-to', maxSpeed: 5,
-        instruction: 'Mantené presionado el freno hasta bajar a 5 km/h o menos antes de llegar a la loma.',
+        instruction: 'Reducí a 5 o menos antes de la loma y cruzala despacio. Si te detenés, acelerá suavemente para completar el paso.',
         failureMessage: 'Llegaste a la loma con demasiada velocidad. Había que bajar a 5 km/h o menos antes de cruzarla.',
       },
     },

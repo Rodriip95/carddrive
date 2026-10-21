@@ -85,6 +85,14 @@ export function createRoad(groundY: number) {
     offset = 0;
     update(0);
   }
+  function setMarkingGap(gap: { start: number; end: number; hidePosts: boolean } | null) {
+    markers.forEach((marker, index) => {
+      const isPost = index % 2 === 1;
+      const halfLength = isPost ? 0.06 : 1.25;
+      marker.visible = !gap || (isPost && !gap.hidePosts)
+        || marker.position.z + halfLength < gap.start || marker.position.z - halfLength > gap.end;
+    });
+  }
   update(0);
-  return { object, update, reset, changeSpeed, applyCollision, getSpeed: () => speed, getTargetSpeed: () => targetSpeed };
+  return { object, update, reset, setMarkingGap, changeSpeed, applyCollision, getSpeed: () => speed, getTargetSpeed: () => targetSpeed };
 }
