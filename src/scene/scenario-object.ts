@@ -292,5 +292,6 @@ export function createScenarioObject(groundY: number, config: ScenarioConfig) {
     setLight('red');
   }
 
-  return { object, update, reset, waitForGreen };
+  // Distancia desde el origen del objeto (línea de detención o inicio de la marca) al centro del auto.
+  return { object, update, reset, waitForGreen, getDistance: () => object.position.z };
 }

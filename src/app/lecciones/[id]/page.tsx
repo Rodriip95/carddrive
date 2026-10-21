@@ -41,10 +41,20 @@ export default async function LessonPage({ params }: LessonPageProps) {
         </ol>
         {module.id === 'senales' && <SignalCatalog signals={trafficSignals} />}
         {module.id === 'vehiculo' && <PreDriveChecklist />}
-        {questions.length > 0 ? questions.map((question) => (
-          <QuestionCard key={question.id} question={question} />
-        )) : <p className="lesson-note">El contenido interactivo de esta lección estará disponible próximamente.</p>}
-        {questions.length > 0 && <LessonCompletion module={module} />}
+        {module.mode === 'simulador' ? (
+          <>
+            <p className="lesson-note">Este módulo se aprende conduciendo: en cada situación elegís qué hacer y después tenés que ejecutarlo con el auto.</p>
+            <Link className="primary-link" href={`/practica?modulo=${module.id}`}>Entrar al simulador →</Link>
+            <LessonCompletion module={module} />
+          </>
+        ) : (
+          <>
+            {questions.length > 0 ? questions.map((question) => (
+              <QuestionCard key={question.id} question={question} />
+            )) : <p className="lesson-note">El contenido interactivo de esta lección estará disponible próximamente.</p>}
+            {questions.length > 0 && <LessonCompletion module={module} />}
+          </>
+        )}
       </article>
     </main>
   );

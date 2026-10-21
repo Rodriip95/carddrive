@@ -55,9 +55,9 @@ export function ProgressControls() {
                   <h3>{module.title}</h3>
                   <span className={`progress-status progress-status-${summary.status}`}>{statusLabel}</span>
                 </div>
-                <span>{summary.completedQuestions} de {summary.totalQuestions}</span>
+                <span>{summary.completedQuestions + summary.completedScenarios} de {summary.totalQuestions + summary.totalScenarios}</span>
               </div>
-              <progress value={ready ? summary.completedQuestions : 0} max={summary.totalQuestions || 1} aria-label={`Progreso de ${module.title}`} />
+              <progress value={ready ? summary.completedQuestions + summary.completedScenarios : 0} max={summary.totalQuestions + summary.totalScenarios || 1} aria-label={`Progreso de ${module.title}`} />
               <Link className="module-link" href={`/lecciones/${module.id}`}>
                 {summary.status === 'completed' ? 'Repasar lección →' : summary.status === 'in-progress' ? 'Continuar lección →' : 'Comenzar lección →'}
               </Link>

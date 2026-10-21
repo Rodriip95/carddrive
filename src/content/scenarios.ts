@@ -21,6 +21,11 @@ export const scenarios: ScenarioConfig[] = [
       ],
       correctOptionId: 'reducir-antes',
       explanation: 'La señal anticipa un cambio en la calzada. Reducir la velocidad antes de la loma y cruzarla suavemente ayuda a mantener el control y evita frenadas o aceleraciones bruscas.',
+      action: {
+        kind: 'slow-to', maxSpeed: 5,
+        instruction: 'Mantené presionado el freno hasta bajar a 5 km/h o menos antes de llegar a la loma.',
+        failureMessage: 'Llegaste a la loma con demasiada velocidad. Había que bajar a 5 km/h o menos antes de cruzarla.',
+      },
     },
   },
   {
@@ -33,6 +38,13 @@ export const scenarios: ScenarioConfig[] = [
       safe: { effect: 'adjust-speed', targetSpeed: 3, bounce: 0.3, shake: 0.12 },
       unsafe: { effect: 'impact', bounce: 1.8, shake: 0.7 },
     },
+    source: {
+      title: 'Ley 24.449 — Tránsito y Seguridad Vial, texto actualizado',
+      publisher: 'Estado Nacional Argentino',
+      jurisdiction: 'Argentina, nacional; alcance provincial sujeto a Ley 13.927',
+      reference: 'Artículo 41, inciso e): prioridad del peatón que cruza lícitamente; el conductor debe detenerse si lo pone en peligro.',
+      url: 'https://www.argentina.gob.ar/normativa/nacional/ley-24449-818/actualizacion',
+    },
     decision: {
       id: 'aproximacion-cruce-peatonal',
       prompt: 'Hay un cruce peatonal más adelante. ¿Qué deberías hacer?',
@@ -43,6 +55,11 @@ export const scenarios: ScenarioConfig[] = [
       ],
       correctOptionId: 'ceder-paso',
       explanation: 'Al aproximarte a un cruce peatonal, reducí la velocidad, observá ambos lados y cedé el paso a quien esté cruzando o por cruzar.',
+      action: {
+        kind: 'slow-to', maxSpeed: 5,
+        instruction: 'Frená hasta 5 km/h o menos antes de llegar a la senda peatonal.',
+        failureMessage: 'Llegaste a la senda peatonal sin reducir lo suficiente. Había que bajar a 5 km/h o menos para poder ceder el paso.',
+      },
     },
   },
   {
@@ -73,6 +90,11 @@ export const scenarios: ScenarioConfig[] = [
       ],
       correctOptionId: 'pare-detenerse',
       explanation: 'PARE exige detener completamente el vehículo antes de la línea de detención o, si no existe, antes de la senda peatonal. Después, avanzá cuando el cruce esté despejado y sea seguro.',
+      action: {
+        kind: 'stop-before-line',
+        instruction: 'Frená hasta detenerte por completo antes de la línea blanca.',
+        failureMessage: 'No te detuviste antes de la línea. Con PARE hay que frenar por completo antes de cruzarla.',
+      },
     },
   },
   {
@@ -103,6 +125,11 @@ export const scenarios: ScenarioConfig[] = [
       ],
       correctOptionId: 'rojo-detener',
       explanation: 'Con luz roja hay que detenerse antes de la línea marcada o de la senda peatonal. Esperá la habilitación verde y permití que terminen de cruzar las personas que ya iniciaron el cruce.',
+      action: {
+        kind: 'stop-before-line',
+        instruction: 'Frená hasta detenerte por completo antes de la línea, sin invadir la senda.',
+        failureMessage: 'Pasaste la línea con luz roja. Había que detenerse antes de ella y esperar el verde.',
+      },
     },
   },
   {
@@ -133,6 +160,11 @@ export const scenarios: ScenarioConfig[] = [
       ],
       correctOptionId: 'ceder-derecha',
       explanation: 'En esta situación equivalente y sin señalización específica, debe cederse al vehículo que cruza desde la derecha. La prioridad tiene excepciones: entre ellas, señalización en contrario, ferrocarriles, servicios de urgencia en misión, semiautopistas, peatones en la senda y reglas de rotonda; también cambia en ciertos ingresos o maniobras. La línea H.4 indica dónde detenerse cuando lo exige la autoridad, una señal o semáforo, un cruce peatonal o ferroviario, o si la bocacalle está ocupada: no asigna por sí sola la prioridad entre vehículos. La senda H.5 es el lugar de cruce peatonal y quienes cruzan allí tienen prioridad, salvo indicación de semáforo o autoridad.',
+      action: {
+        kind: 'slow-to', maxSpeed: 5,
+        instruction: 'Frená hasta 5 km/h o menos para poder cederle el paso al auto de tu derecha.',
+        failureMessage: 'Llegaste a la encrucijada sin reducir lo suficiente. Para ceder el paso había que bajar a 5 km/h o menos.',
+      },
     },
   },
 ];

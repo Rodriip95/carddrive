@@ -2,27 +2,32 @@
 
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import type { PerspectiveCamera } from 'three';
 import { createDrivingExperience } from '../../scene/app';
 import type { ScenarioConfig } from '../../domain/scenario';
 
 type DrivingExperienceApi = Awaited<ReturnType<typeof createDrivingExperience>>;
 
-export default function DrivingScene({ speed, night, running, scenario, onReady, onLoadStateChange, onDecisionReady, onAssetWarning }: {
-  speed: number;
+export default function DrivingScene({ pedalRef, speedLimit, night, running, controlsEnabled, scenario, onReady, onLoadStateChange, onDecisionReady, onActionResult, onSpeedChange, onAssetWarning }: {
+  // Pedal sostenido por el usuario: -1 freno, 0 nada, 1 acelerador.
+  pedalRef: MutableRefObject<-1 | 0 | 1>;
+  speedLimit: number;
   night: boolean;
   running: boolean;
+  controlsEnabled: boolean;
   scenario: ScenarioConfig;
   onReady: (experience: DrivingExperienceApi | null) => void;
   onLoadStateChange: (state: 'loading' | 'ready' | 'error') => void;
   onDecisionReady: () => void;
+  onActionResult: (success: boolean) => void;
+  onSpeedChange: (speed: number) => void;
   onAssetWarning: (warning: string | null) => void;
 }) {
   const { camera, scene, size } = useThree();
   const experience = useRef<DrivingExperienceApi | null>(null);
-  const speedRef = useRef(speed);
   const nightRef = useRef(night);
-  speedRef.current = speed;
+  const lastSpeed = useRef(-1);
   nightRef.current = night;
   const [loadError, setLoadError] = useState(false);
   const perspectiveCamera = camera as PerspectiveCamera;
@@ -40,8 +45,9 @@ export default function DrivingScene({ speed, night, running, scenario, onReady,
       onLoadStateChange('ready');
       onAssetWarning(created.assetWarning);
       created.resize(size.width, size.height);
-      created.setSpeed(speedRef.current);
       created.setNight(nightRef.current);
+      lastSpeed.current = Math.round(created.getSpeed());
+      onSpeedChange(lastSpeed.current);
       onReady(created);
     }).catch((error: unknown) => {
       if (!cancelled) {
@@ -57,23 +63,30 @@ export default function DrivingScene({ speed, night, running, scenario, onReady,
       experience.current = null;
       onReady(null);
     };
-  }, [scene, perspectiveCamera, scenario, onReady, onLoadStateChange, onAssetWarning]);
+  }, [scene, perspectiveCamera, scenario, onReady, onLoadStateChange, onSpeedChange, onAssetWarning]);
 
   useLayoutEffect(() => {
     experience.current?.resize(size.width, size.height);
   }, [size.width, size.height]);
 
   useEffect(() => {
-    experience.current?.setSpeed(speed);
-  }, [speed]);
-
-  useEffect(() => {
     experience.current?.setNight(night);
   }, [night]);
 
   useFrame((_, delta) => {
-    if (!running || !experience.current) return;
-    if (experience.current.update(Math.min(delta, 0.1))) onDecisionReady();
+    const current = experience.current;
+    if (!running || !current) return;
+    const step = Math.min(delta, 0.1);
+    if (controlsEnabled) current.drive(pedalRef.current, step, speedLimit);
+    const { decisionReady, actionResult } = current.update(step);
+    // Solo avisamos a React cuando cambia el valor mostrado, no en cada fotograma.
+    const shownSpeed = Math.round(current.getSpeed());
+    if (shownSpeed !== lastSpeed.current) {
+      lastSpeed.current = shownSpeed;
+      onSpeedChange(shownSpeed);
+    }
+    if (decisionReady) onDecisionReady();
+    if (actionResult) onActionResult(actionResult === 'success');
   }, -1);
 
   return loadError ? <>

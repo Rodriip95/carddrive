@@ -779,49 +779,11 @@ select:focus-visible {
   color: #8c2525;
 }
 
-.practice-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding: 16px;
-}
-
-.practice-controls p {
-  margin: 0 auto 0 0;
-  color: #294337;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.practice-controls button {
-  min-height: 44px;
-  padding: 0 15px;
-  border: 1px solid #cbd9cf;
-  border-radius: 8px;
-  background: #f5f8f3;
-  color: #22533f;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
 .notice-card button.primary-link {
   border: 0;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-}
-
-.practice-controls button:hover:not(:disabled) {
-  background: #e8f2e9;
-}
-
-.practice-controls button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 @media (max-width: 620px) {
@@ -917,15 +879,7 @@ select:focus-visible {
     padding: 17px;
   }
 
-  .practice-controls {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .practice-controls p {
-    grid-column: 1 / -1;
-  }
-}
+    }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1449,5 +1403,190 @@ select:focus-visible {
 
   .pre-drive-item > p {
     margin-left: 0;
+  }
+}
+
+/* Controles dentro de la escena: se superponen al canvas, como el tablero de un auto. */
+.practice-module-bar {
+  margin: 0;
+  padding: 10px 16px;
+  background: #eef5ee;
+  color: #294337;
+  font-size: 14px;
+}
+
+.scenario-hint {
+  font-size: 13px;
+  color: #52665b;
+}
+
+.driving-hud {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.driving-hud > * {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.hud-speed {
+  top: 12px;
+  left: 12px;
+  display: grid;
+  min-width: 78px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #14231bcc;
+  color: #fff;
+  text-align: center;
+}
+
+.hud-speed strong {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.hud-speed span,
+.hud-speed small {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.hud-instruction {
+  top: 12px;
+  left: 50%;
+  width: min(420px, calc(100% - 330px));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff6dc;
+  color: #503b0b;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 6px 20px #10201833;
+}
+
+.hud-tools {
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.hud-button {
+  border: 1px solid #ffffff99;
+  background: #14231bcc;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.hud-button:focus-visible {
+  outline: 3px solid #e28146;
+  outline-offset: 2px;
+}
+
+.hud-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hud-small {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 18px;
+  touch-action: manipulation;
+}
+
+.hud-steering {
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  gap: 12px;
+}
+
+.hud-steer {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  font-size: 26px;
+  touch-action: manipulation;
+}
+
+.hud-pedals {
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.hud-brake,
+.hud-gas {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 78px;
+  height: 104px;
+  border-radius: 14px;
+}
+
+.hud-brake {
+  background: #a83a2ccc;
+}
+
+.hud-gas {
+  background: #2f7a4fcc;
+}
+
+.hud-brake small,
+.hud-gas small {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.hud-button.is-pressed {
+  transform: translateY(3px) scale(0.97);
+  border-color: #fff;
+  filter: brightness(1.25);
+}
+
+@media (max-width: 620px) {
+  .hud-instruction {
+    top: 74px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    transform: none;
+  }
+
+  .hud-speed {
+    min-width: 64px;
+  }
+
+  .hud-small {
+    width: 40px;
+    height: 40px;
+  }
+
+  .hud-steer {
+    width: 58px;
+    height: 58px;
+  }
+
+  .hud-brake,
+  .hud-gas {
+    width: 66px;
+    height: 90px;
   }
 }

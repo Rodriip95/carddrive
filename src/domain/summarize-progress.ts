@@ -7,6 +7,8 @@ export interface ModuleProgressSummary {
   status: LessonStatus;
   completedQuestions: number;
   totalQuestions: number;
+  completedScenarios: number;
+  totalScenarios: number;
   topicsToReinforce: Array<{ topic: string; questionIds: string[] }>;
 }
 
@@ -21,12 +23,14 @@ export function summarizeModuleProgress(
     ...(moduleProgress?.answers.map((answer) => answer.questionId) ?? []),
   ]);
   const completedQuestions = module.questionIds.filter((questionId) => answeredIds.has(questionId)).length;
+  const completedScenarios = module.scenarioIds.filter((id) => moduleProgress?.completedScenarioIds.includes(id)).length;
+  const totalItems = module.questionIds.length + module.scenarioIds.length;
   const hasStarted = Boolean(moduleProgress && (
     answeredIds.size > 0
     || moduleProgress.completedScenarioIds.length > 0
     || (moduleProgress.completedChecklistItemIds?.length ?? 0) > 0
   ));
-  const isComplete = module.questionIds.length > 0 && completedQuestions === module.questionIds.length;
+  const isComplete = totalItems > 0 && completedQuestions + completedScenarios === totalItems;
   const status: LessonStatus = isComplete ? 'completed' : hasStarted ? 'in-progress' : 'not-started';
   const questionById = new Map(questions.map((question) => [question.id, question]));
   const latestAnswerByQuestionId = new Map<string, QuestionAnswer>();
@@ -50,6 +54,8 @@ export function summarizeModuleProgress(
     status,
     completedQuestions,
     totalQuestions: module.questionIds.length,
+    completedScenarios,
+    totalScenarios: module.scenarioIds.length,
     topicsToReinforce: [...topics].map(([topic, questionIds]) => ({ topic, questionIds })),
   };
 }

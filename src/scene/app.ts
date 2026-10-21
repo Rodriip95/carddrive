@@ -1,4 +1,4 @@
-import { Color, Fog, Group, Mesh, PerspectiveCamera, Scene } from 'three';
+import { Color, Fog, Group, MathUtils, Mesh, PerspectiveCamera, Scene } from 'three';
 import { createCameraFollow, frameCamera } from './camera';
 import { loadCar } from './car';
 import { loadTraffic } from './traffic';
@@ -9,6 +9,7 @@ import { createRoad } from './road';
 import { createScenarioObject } from './scenario-object';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ScenarioConfig } from '../domain/scenario';
+import type { ScenarioAction } from '../domain/scenario-controller';
 
 export async function createDrivingExperience(scene: Scene, camera: PerspectiveCamera, scenario: ScenarioConfig) {
   const world = createWorld();
@@ -72,6 +73,45 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       world.update(0);
     }
 
+    // Maniobra que el usuario debe ejecutar tras elegir la opción correcta.
+    let action: ScenarioAction | null = null;
+    let actionResult: 'success' | 'failure' | null = null;
+
+    function beginAction(next: ScenarioAction) {
+      action = next;
+      actionResult = null;
+    }
+
+    function evaluateAction() {
+      if (!action || actionResult) return;
+      // Distancia entre el frente del auto y la línea; el auto está en Z=0 mirando hacia +Z.
+      const gap = scenarioObject.getDistance() - car.size.z / 2;
+      const speed = road.getSpeed();
+      if (action.kind === 'stop-before-line') {
+        if (gap <= 0) actionResult = 'failure';
+        else if (speed < 0.05) actionResult = 'success';
+      } else if (gap <= 1) {
+        actionResult = speed <= action.maxSpeed ? 'success' : 'failure';
+      }
+    }
+
+    // Pedal sostenido: acelera (1), frena (-1) o mantiene la velocidad (0).
+    let lastPedal: -1 | 0 | 1 = 0;
+
+    function drive(pedal: -1 | 0 | 1, delta: number, speedLimit: number) {
+      if (pedal === 0) {
+        // Al soltar el pedal mantenemos la velocidad actual en lugar de seguir hasta la objetivo.
+        if (lastPedal !== 0) road.changeSpeed(road.getSpeed() - road.getTargetSpeed());
+        lastPedal = 0;
+        return;
+      }
+      lastPedal = pedal;
+      const { accelerate, brake } = sceneConfig.pedals;
+      const target = road.getTargetSpeed();
+      const next = MathUtils.clamp(target + pedal * (pedal > 0 ? accelerate : brake) * delta, 0, speedLimit);
+      road.changeSpeed(next - target);
+    }
+
     function update(delta: number) {
       const steps = Math.max(1, Math.ceil(delta / sceneConfig.collisions.maxStep));
       const step = delta / steps;
@@ -83,17 +123,21 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
         decisionReady = scenarioObject.update(step, road.getSpeed()) || decisionReady;
         traffic.update(step, road.getSpeed(), world.getNightAmount());
         collisions.resolve();
+        evaluateAction();
       }
       cameraFollow.update(car.object.position, delta);
       world.update(delta);
       car.updateLights(world.getNightAmount());
-      return decisionReady;
+      const result = actionResult;
+      if (result) action = null;
+      return { decisionReady, actionResult: result };
     }
 
     function resolveDecision(safeChoice: boolean) {
       if (safeChoice) {
         const event = scenario.events.safe;
-        road.changeSpeed(event.targetSpeed - road.getTargetSpeed());
+        // Con maniobra, la velocidad ya la manejó el usuario; sin ella aplicamos la velocidad objetivo.
+        if (!scenario.decision.action) road.changeSpeed(event.targetSpeed - road.getTargetSpeed());
         if (event.effect === 'stop') {
           if (scenario.visual.kind === 'traffic-light') scenarioObject.waitForGreen();
         } else {
@@ -109,6 +153,8 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
     }
 
     function reset() {
+      action = null;
+      actionResult = null;
       road.reset();
       scenarioObject.reset();
       car.reset();
@@ -127,6 +173,9 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       resize,
       reset,
       resolveDecision,
+      beginAction,
+      drive,
+      getSpeed: road.getSpeed,
       dispose,
       setNight: world.setNight,
       setSpeed: (speed: number) => road.changeSpeed(speed - road.getTargetSpeed()),

@@ -2,16 +2,24 @@ import { Group, MathUtils } from 'three';
 import { sceneConfig } from './config';
 import { loadVehicle } from './vehicle';
 
+interface TrafficModel {
+  name: string;
+  url: string;
+  size: number;
+  lightHeight: number;
+  lane: -1 | 0 | 1;
+  z: number;
+  speed: number;
+}
+
 export async function loadTraffic(groundY: number) {
   const object = new Group();
   object.name = 'traffic';
-  const { minSpeed, maxSpeed, truckSize, busSize } = sceneConfig.traffic;
+  const { minSpeed, maxSpeed } = sceneConfig.traffic;
   const forward = -(Math.sign(sceneConfig.road.speed) || -1);
   const halfLength = sceneConfig.road.length / 2 - 10;
-  const models = [
-    { name: 'truck', url: '/models/camion.glb', size: truckSize, lightHeight: -0.095, lane: -1, z: 12, speed: 8 },
-    { name: 'bus', url: '/models/colectivo.glb', size: busSize, lightHeight: -0.16, lane: 1, z: 22, speed: 10 },
-  ];
+  // Por ahora no hay vehículos de tráfico: agregá aquí modelos nuevos cuando los necesites.
+  const models: TrafficModel[] = [];
   const vehicles = await Promise.all(models.map(async (model) => {
     const vehicle = await loadVehicle(model.url, model.size, model.lightHeight);
     const placement = new Group();

@@ -10,6 +10,7 @@ interface ProgressContextValue {
   ready: boolean;
   status: ProgressLoadStatus | 'save-error';
   recordAnswer: (moduleId: string, answer: QuestionAnswer) => void;
+  recordScenarioCompletion: (moduleId: string, scenarioId: string) => void;
   saveChecklistProgress: (moduleId: string, completedIds: string[]) => void;
   recordAssessmentAttempt: (moduleId: string, attempt: AssessmentAttempt) => void;
   resetProgress: () => boolean;
@@ -40,6 +41,18 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       completedQuestionIds: [...new Set([...currentModule.completedQuestionIds, answer.questionId])],
       answers: [...currentModule.answers, answer],
       updatedAt: answer.answeredAt,
+    }));
+  }
+
+  function recordScenarioCompletion(moduleId: string, scenarioId: string) {
+    if (!ready) return;
+    // Si ya estaba completada no guardamos nada: evita re-renderizar en bucle desde un efecto.
+    const saved = progressRef.current.modules.find((module) => module.moduleId === moduleId);
+    if (saved?.completedScenarioIds.includes(scenarioId)) return;
+    updateModule(moduleId, (currentModule) => ({
+      ...currentModule,
+      completedScenarioIds: [...new Set([...currentModule.completedScenarioIds, scenarioId])],
+      updatedAt: new Date().toISOString(),
     }));
   }
 
@@ -94,7 +107,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ProgressContext.Provider value={{ progress, ready, status, recordAnswer, saveChecklistProgress, recordAssessmentAttempt, resetProgress }}>
+    <ProgressContext.Provider value={{ progress, ready, status, recordAnswer, recordScenarioCompletion, saveChecklistProgress, recordAssessmentAttempt, resetProgress }}>
       {children}
     </ProgressContext.Provider>
   );
