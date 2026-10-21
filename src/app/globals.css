@@ -33,6 +33,12 @@ a:focus-visible {
   outline-offset: 4px;
 }
 
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid #e28146;
+  outline-offset: 3px;
+}
+
 .learning-page {
   width: min(1120px, 100% - 48px);
   margin: 0 auto;
@@ -553,6 +559,113 @@ a:focus-visible {
   background: white;
 }
 
+.practice-mode-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px 0;
+}
+
+.practice-mode-switch button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #aebeb3;
+  border-radius: 8px;
+  background: #fff;
+  color: #294337;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.practice-mode-switch button[aria-pressed='true'] {
+  border-color: #23644d;
+  background: #e8f2e9;
+  color: #174b37;
+}
+
+.practice-mode-switch button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.practice-mode-notice {
+  margin: 12px 16px;
+  padding: 12px 14px;
+  border-left: 4px solid #a86b2f;
+  background: #fff7e5;
+  color: #514324;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.text-practice {
+  padding: 18px 20px 24px;
+}
+
+.text-practice > h2 {
+  margin: 0;
+  color: #18372d;
+  font-size: clamp(24px, 4vw, 32px);
+}
+
+.text-practice > p:not(.eyebrow) {
+  color: #52665b;
+  line-height: 1.6;
+}
+
+.scenario-illustration {
+  max-width: 720px;
+  margin: 18px 0;
+}
+
+.scenario-illustration svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #d7e2dc;
+  border-radius: 12px;
+}
+
+.scenario-illustration figcaption {
+  margin-top: 8px;
+  color: #52665b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.text-practice-decision,
+.text-practice-result {
+  max-width: 720px;
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #dfe6df;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.text-practice-decision h3,
+.text-practice-result h3 {
+  margin: 0;
+  color: #21372f;
+  font-size: 20px;
+}
+
+.text-practice-decision > p,
+.text-practice-result > p {
+  color: #40574b;
+  line-height: 1.6;
+}
+
+.text-practice-result.is-correct {
+  border-left: 5px solid #23644d;
+}
+
+.text-practice-result.is-incorrect {
+  border-left: 5px solid #a64a32;
+}
+
 .practice-canvas {
   position: relative;
   overflow: hidden;
@@ -789,6 +902,10 @@ a:focus-visible {
     min-height: 300px;
   }
 
+  .practice-canvas.scene-decision {
+    height: min(82vh, 560px);
+  }
+
   .scenario-overlay {
     align-items: flex-end;
     justify-content: center;
@@ -796,7 +913,7 @@ a:focus-visible {
   }
 
   .scenario-panel {
-    max-height: 82%;
+    max-height: 94%;
     padding: 17px;
   }
 

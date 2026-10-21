@@ -1,7 +1,5 @@
 import { Color, DirectionalLight, Fog, HemisphereLight, Scene } from 'three';
 import { sceneConfig } from './config';
-import type { PerspectiveCamera } from 'three';
-import { createSky } from './sky';
 
 export function createWorld() {
   const scene = new Scene();
@@ -27,8 +25,6 @@ export function createWorld() {
   sunlight.shadow.normalBias = 0.002;
   sunlight.shadow.bias = -0.00002;
   scene.add(sunlight);
-  const sky = createSky();
-  scene.add(sky.object);
   let nightAmount = 0;
   let targetNight = 0;
   const dayColor = new Color(sceneConfig.background);
@@ -56,19 +52,17 @@ export function createWorld() {
     sunlight.intensity = 3 + (0.8 - 3) * nightAmount;
   }
 
-  function update(delta: number, camera: PerspectiveCamera) {
+  function update(delta: number) {
     // Interpolación exponencial: se puede invertir la transición sin saltos de color.
     const blend = 1 - Math.exp(-5 * delta / Math.max(sceneConfig.sky.transitionSeconds, 0.001));
     nightAmount += (targetNight - nightAmount) * blend;
     applyLighting();
-    sky.update(nightAmount, camera);
   }
 
-  function reset(camera: PerspectiveCamera) {
+  function reset() {
     nightAmount = 0;
     targetNight = 0;
     applyLighting();
-    sky.update(nightAmount, camera);
   }
 
   return { scene, setNight, update, reset, getNightAmount: () => nightAmount };

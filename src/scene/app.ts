@@ -68,8 +68,8 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       frameCamera(camera, car.radius, viewportWidth / viewportHeight);
       cameraFollow.captureOffset();
       cameraFollow.update(car.object.position);
-      // Colocamos el sol y la luna después de encuadrar la cámara para que no aparezcan en el origen.
-      world.update(0, camera);
+      // Aplicamos la iluminación inicial después de encuadrar la cámara.
+      world.update(0);
     }
 
     function update(delta: number) {
@@ -85,7 +85,7 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
         collisions.resolve();
       }
       cameraFollow.update(car.object.position, delta);
-      world.update(delta, camera);
+      world.update(delta);
       car.updateLights(world.getNightAmount());
       return decisionReady;
     }
@@ -114,7 +114,7 @@ export async function createDrivingExperience(scene: Scene, camera: PerspectiveC
       car.reset();
       traffic.reset();
       cameraFollow.reset();
-      world.reset(camera);
+      world.reset();
       car.updateLights(0);
       collisions.reset();
       resize(viewportWidth, viewportHeight);
